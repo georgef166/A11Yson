@@ -89,7 +89,7 @@ export default function Quiz() {
     return (
       <div className="min-h-screen bg-neutral-900 flex items-center justify-center text-white">
         <div className="animate-pulse flex flex-col items-center gap-4">
-          <div className="w-12 h-12 rounded-full border-2 border-purple-500 border-t-transparent animate-spin" />
+          <div className="w-12 h-12 rounded-full border-2 border-green-500 border-t-transparent animate-spin" />
           <p>Loading your experience...</p>
         </div>
       </div>
@@ -123,7 +123,7 @@ export default function Quiz() {
           <span>Question {currentQuestionIndex + 1} of {questions.length}</span>
           <div className="h-1 flex-1 mx-4 bg-neutral-800 rounded-full overflow-hidden">
             <motion.div 
-              className="h-full bg-purple-500"
+              className="h-full bg-green-500"
               initial={{ width: 0 }}
               animate={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
             />
@@ -144,7 +144,7 @@ export default function Quiz() {
               </h2>
               <button 
                 onClick={() => playAudio(currentQuestion.text)}
-                className={`p-3 rounded-full bg-white/5 hover:bg-white/10 transition-colors ${isPlaying ? 'text-purple-400' : 'text-neutral-400'}`}
+                className={`p-3 rounded-full bg-white/5 hover:bg-white/10 transition-colors ${isPlaying ? 'text-green-400' : 'text-neutral-400'}`}
               >
                 <Volume2 className="w-6 h-6" />
               </button>
@@ -157,13 +157,13 @@ export default function Quiz() {
                   onClick={() => handleOptionSelect(option)}
                   className={`w-full p-6 rounded-2xl text-left text-lg font-medium transition-all duration-200 border-2
                     ${selectedOption === option 
-                      ? 'border-purple-500 bg-purple-500/10 text-white shadow-[0_0_30px_rgba(168,85,247,0.2)]' 
+                      ? 'border-green-500 bg-green-500/10 text-white shadow-[0_0_30px_rgba(34,197,94,0.2)]' 
                       : 'border-white/5 bg-white/5 text-neutral-400 hover:bg-white/10 hover:border-white/10'
                     }`}
                 >
                   <div className="flex items-center justify-between">
                     {option}
-                    {selectedOption === option && <Check className="w-5 h-5 text-purple-500" />}
+                    {selectedOption === option && <Check className="w-5 h-5 text-green-500" />}
                   </div>
                 </button>
               ))}

@@ -9,8 +9,8 @@ export default function Home() {
     <div className="min-h-screen bg-neutral-900 text-white selection:bg-purple-500 selection:text-white overflow-hidden">
       {/* Background Gradients */}
       <div className="fixed inset-0 z-0">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-[128px]" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-600/20 rounded-full blur-[128px]" />
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-green-600/20 rounded-full blur-[128px]" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-emerald-600/20 rounded-full blur-[128px]" />
       </div>
 
       <main className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 text-center">
@@ -21,7 +21,7 @@ export default function Home() {
           className="max-w-4xl mx-auto space-y-8"
         >
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm">
-            <Sparkles className="w-4 h-4 text-purple-400" />
+            <Sparkles className="w-4 h-4 text-green-400" />
             <span className="text-sm text-neutral-300">AI-Powered Accessibility Assistant</span>
           </div>
 
@@ -31,7 +31,7 @@ export default function Home() {
           
           <p className="text-xl md:text-2xl text-neutral-400 max-w-2xl mx-auto leading-relaxed">
             Your personalized cognitive companion. Experience the web in a way that works for 
-            <span className="text-purple-400 font-semibold"> You</span>.
+            <span className="text-green-400 font-semibold"> You</span>.
           </p>
 
           <motion.div
