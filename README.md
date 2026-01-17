@@ -1,52 +1,39 @@
-# A11Yson Project
+# A11yson
 
-This project consists of a Next.js frontend and a Python (FastAPI) backend.
+**A11yson** is a cognitive accessibility assistant that personalizes the web experience for users with ADHD, Dyslexia, Autism, and more.
 
-## Structure
+## Components
 
-- `frontend/`: Next.js application (Port 3000)
-- `backend/`: FastAPI application (Port 8000)
+### 1. Backend API (`/backend`)
+- **Tech**: Python, FastAPI
+- **Runs on**: `http://localhost:8000`
+- **Setup**:
+  ```bash
+  cd backend
+  pip install -r requirements.txt
+  python main.py
+  ```
 
-## Getting Started
+### 2. Frontend Platform (`/frontend`)
+- **Tech**: Next.js, React, TailwindCSS
+- **Runs on**: `http://localhost:3000`
+- **Setup**:
+  ```bash
+  cd frontend
+  npm install
+  npm run dev
+  ```
 
-### Prerequisites
+### 3. Chrome Extension (`/extension`)
+- **Tech**: Manifest V3, JavaScript
+- **Setup**:
+  1. Open Chrome and go to `chrome://extensions`.
+  2. Enable **Developer mode**.
+  3. Click **Load unpacked**.
+  4. Select the `/extension` folder in this project.
 
-- Node.js (v18+)
-- Python (v3.10+)
-
-### Running the Backend
-
-1. Navigate to the `backend` directory:
-   ```bash
-   cd backend
-   ```
-2. Create and activate a virtual environment (if not already done):
-   ```bash
-   python -m venv .venv
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-   ```
-3. Install dependencies:
-   ```bash
-   pip install fastapi uvicorn
-   ```
-4. Run the backend:
-   ```bash
-   python main.py
-   ```
-
-### Running the Frontend
-
-1. Navigate to the `frontend` directory:
-   ```bash
-   cd frontend
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Run the development server:
-   ```bash
-   npm run dev
-   ```
-
-Open [http://localhost:3000](http://localhost:3000) to see the application.
+## Features
+- **Cognitive Quiz**: AI-powered assessment to determine user needs.
+- **Text-to-Speech**: ElevenLabs integration for reading content.
+- **Image Blocking**: Helps reduce sensory overload by hiding images until clicked.
+- **Theme Injection**: automatically adjusts site themes (prototype).
