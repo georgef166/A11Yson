@@ -1,191 +1,207 @@
 import React, { useEffect, useState } from 'react';
 import { Readability } from '@mozilla/readability';
-import { textVide } from 'text-vide';
+import { DEMO_ARTICLE } from './demoData';
+import type { ArticleData, OverlaySettings } from './types';
 import { initImageBlocker } from './features/imageBlocker';
-import '@fontsource/opendyslexic';
 
-interface ArticleData {
-  title: string;
-  content: string;
-  textContent: string;
-}
+// Components
+import FocusMode from './components/FocusMode';
+import DyslexiaMode from './components/DyslexiaMode';
+import SensoryMode from './components/SensoryMode';
+import CleanMode from './components/CleanMode';
 
 const Overlay: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'focus' | 'dyslexia' | 'sensory' | 'clean'>('clean');
+  const [viewMode, setViewMode] = useState<'tab' | 'grid'>('tab');
   const [article, setArticle] = useState<ArticleData | null>(null);
-  const [timer, setTimer] = useState<number>(25 * 60); // 25 minutes
-  const [timerActive, setTimerActive] = useState(false);
-  const [imageBlockerEnabled, setImageBlockerEnabled] = useState(false);
 
+  const [settings, setSettings] = useState<OverlaySettings>({
+    fontSize: 18,
+    hideImages: false
+  });
+
+  // Message Listener
   useEffect(() => {
-    let interval: any;
-    if (timerActive && timer > 0) {
-        interval = setInterval(() => setTimer(t => t - 1), 1000);
-    } else if (timer === 0) {
-        setTimerActive(false);
-    }
-    return () => clearInterval(interval);
-  }, [timerActive, timer]);
-
-  const formatTime = (seconds: number) => {
-      const m = Math.floor(seconds / 60);
-      const s = seconds % 60;
-      return `${m}:${s < 10 ? '0' : ''}${s}`;
-  };
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-       const ruler = document.getElementById('reading-ruler');
-       if (ruler) {
-           ruler.style.top = `${e.clientY - 32}px`; // Center ruler on mouse
-       }
-    };
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
-
-  useEffect(() => {
-    // Listen for messages to toggle
     const handleMessage = (request: any, _sender: any, _sendResponse: any) => {
       if (request.action === "toggle_a11yson") {
         setIsOpen(prev => !prev);
+      } else if (request.action === "open_mode") {
+        setIsOpen(true);
+        setActiveTab(request.mode);
+      } else if (request.action === "update_settings") { // NEW: Handle settings update
+        setSettings(prev => ({ ...prev, ...request.settings }));
+        // If generic open call included
+        if (request.open) setIsOpen(true);
+      } else if (request.action === "close_a11yson") {
+        setIsOpen(false);
+      } else if (request.action === "get_status") {
+        _sendResponse({ isOpen, activeTab });
+        return true;
       }
     };
     chrome.runtime.onMessage.addListener(handleMessage);
-    
-    // For demo/dev purposes initially, maybe just a hotkey or always checking
-    // But let's stick to extraction logic when we open
-    
-    // Attempt to extract content when component mounts (or when opened)
     if (isOpen && !article) {
-       extractContent();
+      extractContent();
     }
   }, [isOpen]);
 
-  const extractContent = () => {
-    // Detect Brightspace iframe
-    // const iframe = document.querySelector('iframe.d2l-iframe') as HTMLIFrameElement;
-    // const doc = iframe && iframe.contentDocument ? iframe.contentDocument : document;
-    // Using simple document for now for versatility, can add BS logic later
-    const doc = document.cloneNode(true) as Document;
-    
-    // Readability needs a standalone DOM to mess with
-    const reader = new Readability(doc);
-    const parsed = reader.parse();
 
-    if (parsed) {
-      setArticle({
-        title: parsed.title || "Untitled",
-        content: parsed.content || "",
-        textContent: parsed.textContent || ""
-      });
-    }
-  };
 
-  // Toggle button (floating) for testing if popup isn't ready
-  const toggleOverlay = () => {
-    setIsOpen(!isOpen);
-    if (!article) extractContent();
-  };
+  // ... (inside component)
 
+  // Global Image Blocker Effect
   useEffect(() => {
     let cleanup: (() => void) | undefined;
-    if (imageBlockerEnabled) {
+    if (settings.hideImages) {
       cleanup = initImageBlocker();
     }
     return () => {
       if (cleanup) cleanup();
     };
-  }, [imageBlockerEnabled]);
+  }, [settings.hideImages]);
+
+  // God Mode: Alt + Shift + D
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey && e.shiftKey && (e.key === 'D' || e.key === 'd')) {
+        console.log("GOD MODE ACTIVATED");
+        setArticle(DEMO_ARTICLE);
+        setIsOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Extraction Logic
+  const extractContent = () => {
+    try {
+      let doc = document.cloneNode(true) as Document;
+
+      // Iframe Penetration (Brightspace / D2L)
+      // This is crucial for student portals where content is often nested
+      const iframe = document.querySelector('iframe.d2l-iframe') as HTMLIFrameElement;
+      if (iframe && iframe.contentDocument) {
+        console.log("A11ySon: Brightspace Iframe detected, attempting nested extraction...");
+        try {
+          // We must clone the iframe's document, not the window's
+          doc = iframe.contentDocument.cloneNode(true) as Document;
+        } catch (e) {
+          console.warn("A11ySon: Cross-origin iframe restricted. Falling back to main page.");
+        }
+      }
+
+      const reader = new Readability(doc);
+      const parsed = reader.parse();
+      if (parsed) {
+        setArticle({
+          title: parsed.title || "Untitled",
+          content: parsed.content || "",
+          textContent: parsed.textContent || ""
+        });
+      }
+    } catch (e) {
+      console.error("Readability failed", e);
+    }
+  };
 
   if (!isOpen) {
-    return (
-       <div className="fixed bottom-4 right-4 pointer-events-auto">
-         <button 
-           onClick={toggleOverlay}
-           className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full shadow-lg z-[99999]"
-         >
-           A11Yson
-         </button>
-       </div>
-    );
+    return null;
   }
 
   return (
-    <div className="fixed inset-0 bg-white z-[99999] pointer-events-auto overflow-hidden font-sans">
-      {/* Close button */}
-      <button 
-        onClick={() => setIsOpen(false)}
-        className="absolute top-4 right-4 z-50 bg-gray-200 hover:bg-gray-300 rounded-full p-2"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
+    <div className="fixed inset-0 bg-white z-[2147483647] pointer-events-auto flex flex-col font-sans text-slate-900">
 
-      {article ? (
-        <div className="grid grid-cols-2 grid-rows-2 w-full h-full">
-          
-          {/* Top-Left: ADHD (Bionic) */}
-          <div className="p-8 overflow-y-auto border-r border-b border-gray-200 bg-white text-gray-900 relative">
-            <div className="absolute top-4 right-4 bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-mono text-sm font-bold flex items-center gap-2 cursor-pointer hover:bg-blue-200" onClick={() => setTimerActive(!timerActive)}>
-                <span>{timerActive ? '⏸' : '▶'}</span>
-                {formatTime(timer)}
+      {/* Header */}
+      <header className="absolute top-4 right-6 z-50 flex gap-2">
+        {/* Grid Toggle */}
+        <button
+          onClick={() => setViewMode(viewMode === 'tab' ? 'grid' : 'tab')}
+          className={`group p-2 rounded-full font-bold text-sm border shadow-sm transition-all flex items-center gap-2 px-4 ${viewMode === 'grid'
+            ? 'bg-purple-600 text-white border-purple-600'
+            : 'bg-white text-gray-600 border-gray-200 hover:bg-purple-50'
+            }`}
+          title="Toggle Neuro-Flow Grid"
+        >
+          {viewMode === 'tab' ? (
+            <>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+              </svg>
+              <span>View Grid</span>
+            </>
+          ) : (
+            <>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+              <span>Tab View</span>
+            </>
+          )}
+        </button>
+
+        {/* Close Button */}
+        <button
+          onClick={() => setIsOpen(false)}
+          className="group bg-white/80 backdrop-blur p-2 rounded-full hover:bg-red-50 text-gray-400 hover:text-red-500 shadow-sm border border-gray-100 transition-all"
+          title="Close Overlay"
+        >
+          <span className="sr-only">Close</span>
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 transform group-hover:rotate-90 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </header>
+
+      {/* Main Content Area */}
+      <main className="flex-1 overflow-hidden relative bg-white">
+        {article ? (
+          viewMode === 'tab' ? (
+            // TAB VIEW
+            <div className="h-full w-full max-w-4xl mx-auto pt-16">
+              {/* Tab Headers (Optional: Could add simple tab switcher if not relying on keybinds/msg) */}
+              {activeTab === 'focus' && <FocusMode article={article} settings={settings} />}
+              {activeTab === 'dyslexia' && <DyslexiaMode article={article} settings={settings} />}
+              {activeTab === 'sensory' && <SensoryMode article={article} settings={settings} />}
+              {activeTab === 'clean' && <CleanMode article={article} settings={settings} />}
             </div>
-            <h2 className="text-xl font-bold mb-2 text-blue-600 uppercase tracking-wider">Focus (ADHD)</h2>
-            <h1 className="text-2xl font-bold mb-4">{article.title}</h1>
-            <div 
-              className="prose max-w-none text-lg leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: textVide(article.textContent) }} 
-            />
+          ) : (
+            // GRID VIEW (The "Explosion")
+            <div className="grid grid-cols-2 grid-rows-2 h-full w-full">
+              <div className="border-r border-b border-gray-200 relative overflow-hidden">
+                <div className="absolute inset-0 scale-[0.8] origin-top-left w-[125%] h-[125%]">
+                  <FocusMode article={article} settings={settings} />
+                </div>
+                <div className="absolute top-2 left-2 bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded">ADHD</div>
+              </div>
+              <div className="border-b border-gray-200 relative overflow-hidden">
+                <div className="absolute inset-0 scale-[0.8] origin-top-left w-[125%] h-[125%]">
+                  <DyslexiaMode article={article} settings={settings} />
+                </div>
+                <div className="absolute top-2 left-2 bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-1 rounded">Dyslexia</div>
+              </div>
+              <div className="border-r border-gray-200 relative overflow-hidden">
+                <div className="absolute inset-0 scale-[0.8] origin-top-left w-[125%] h-[125%]">
+                  <SensoryMode article={article} settings={settings} />
+                </div>
+                <div className="absolute top-2 left-2 bg-green-900 text-green-100 text-xs font-bold px-2 py-1 rounded">Sensory</div>
+              </div>
+              <div className="relative overflow-hidden bg-white">
+                <div className="absolute inset-0 scale-[0.8] origin-top-left w-[125%] h-[125%]">
+                  <CleanMode article={article} settings={settings} />
+                </div>
+                <div className="absolute top-2 left-2 bg-gray-100 text-gray-800 text-xs font-bold px-2 py-1 rounded">Clean</div>
+              </div>
+            </div>
+          )
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-4">
+            <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            <p className="font-medium animate-pulse">Analyzing page content...</p>
           </div>
-
-          {/* Top-Right: Dyslexia */}
-          <div className="p-8 overflow-y-auto border-b border-gray-200 bg-[#fffff0] text-black mode-dyslexia font-dyslexic relative group cursor-text" style={{ letterSpacing: '0.1em', lineHeight: '2.0' }}>
-             {/* Reading Ruler */}
-             <div 
-               className="pointer-events-none fixed left-[50%] right-0 h-16 bg-yellow-200/30 border-y-2 border-yellow-400/50 hidden group-hover:block z-50 text-right pr-2 text-yellow-600 text-xs font-bold uppercase tracking-widest mix-blend-multiply"
-               id="reading-ruler"
-             >
-               Dyslexia Guide
-             </div>
-
-             <h2 className="text-xl font-bold mb-2 text-yellow-800 uppercase tracking-wider font-sans">Dyslexia Friendly</h2>
-             <h1 className="text-2xl font-bold mb-4">{article.title}</h1>
-             <div 
-               className="prose max-w-none text-xl"
-               dangerouslySetInnerHTML={{ __html: article.textContent }} 
-             />
-          </div>
-
-          {/* Bottom-Left: Sensory (Dark Mode) */}
-          <div className="p-8 overflow-y-auto border-r border-gray-200 bg-gray-900 text-gray-100">
-             <h2 className="text-xl font-bold mb-2 text-green-400 uppercase tracking-wider">Sensory Safe</h2>
-             <h1 className="text-2xl font-bold mb-4">{article.title}</h1>
-             <div className="prose prose-invert max-w-none text-lg">
-                {/*  Plain text, no images, simple structure */}
-                {article.textContent.split('\n').map((para, i) => (
-                  para.trim() && <p key={i} className="mb-4">{para}</p>
-                ))}
-             </div>
-          </div>
-
-          {/* Bottom-Right: Original (Cleaned) */}
-          <div className="p-8 overflow-y-auto bg-gray-50 text-gray-800">
-             <h2 className="text-xl font-bold mb-2 text-gray-500 uppercase tracking-wider">Clean Reader</h2>
-             <h1 className="text-2xl font-bold mb-4">{article.title}</h1>
-             <div 
-               className="prose max-w-none"
-               dangerouslySetInnerHTML={{ __html: article.content }} 
-             />
-          </div>
-
-        </div>
-      ) : (
-        <div className="flex items-center justify-center h-full">
-           <div className="text-xl animate-pulse">Analyzing content...</div>
-        </div>
-      )}
+        )}
+      </main>
     </div>
   );
 };

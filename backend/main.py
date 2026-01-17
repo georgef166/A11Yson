@@ -8,7 +8,8 @@ app = FastAPI()
 # Add CORS middleware to allow requests from the frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173", "chrome-extension://*"], # Added chrome extension support
+    # Allow all origins for the hackathon ensuring extension works without ID checking
+    allow_origins=["*"], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
