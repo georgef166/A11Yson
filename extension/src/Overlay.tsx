@@ -46,6 +46,28 @@ const Overlay: React.FC = () => {
     }
   }, [isOpen]);
 
+  // Load Saved Profile on Mount
+  useEffect(() => {
+    chrome.storage.local.get("userProfile", (result) => {
+      if (result.userProfile) {
+        const p = result.userProfile as any;
+
+        // Set Default Mode based on Condition
+        if (p.primary_condition === "ADHD") setActiveTab('focus');
+        else if (p.primary_condition === "Dyslexia") setActiveTab('dyslexia');
+        else if (p.primary_condition === "Anxiety") setActiveTab('sensory');
+        else setActiveTab('clean');
+
+        // Set Settings
+        setSettings(prev => ({
+          ...prev,
+          hideImages: p.features?.image_hiding || false,
+          fontSize: p.content_density === "chunked" ? 20 : 18
+        }));
+      }
+    });
+  }, []);
+
 
 
   // ... (inside component)

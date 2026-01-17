@@ -24,6 +24,22 @@ function App() {
     checkStatus();
   }, []);
 
+  // Load Saved Profile
+  useEffect(() => {
+    chrome.storage.local.get("userProfile", (result) => {
+      if (result.userProfile) {
+        const p = result.userProfile as any;
+        console.log("Loading Profile into Popup:", p);
+        if (p.recommended_font === "OpenDyslexic") setDyslexiaFont(true);
+        if (p.features?.image_hiding) setHideImages(true);
+
+        // Intelligent Defaults based on keys
+        if (p.content_density === "chunked") setFontSize(18);
+        if (p.content_density === "compact") setFontSize(14);
+      }
+    });
+  }, []);
+
   // Send LIVE settings updates
   useEffect(() => {
     const updateLiveSettings = async () => {

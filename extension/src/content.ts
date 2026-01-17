@@ -105,8 +105,17 @@ injectOverlay();
 window.addEventListener("message", (event) => {
   if (event.source !== window) return;
   if (event.data.type && event.data.type === "A11YSON_PROFILE_UPDATE") {
-    chrome.storage.local.set({ userProfile: event.data.profile }, () => {
-      // alert("A11Yson Profile Synced!");
+    const p = event.data.profile;
+    chrome.storage.local.set({ userProfile: p }, () => {
+      console.log("A11ySon: Profile Synced & Applying Immediately");
+      // Apply Immediately!
+      const settings = {
+        fontSize: 16,
+        dyslexiaFont: p.recommended_font === "OpenDyslexic",
+        hideImages: p.features?.image_hiding || false,
+        lineHeight: 0
+      };
+      updateLiveStyles(settings);
     });
   }
 });
@@ -115,5 +124,20 @@ window.addEventListener("message", (event) => {
 chrome.runtime.onMessage.addListener((request, _sender, _sendResponse) => {
   if (request.action === "apply_live_settings") {
     updateLiveStyles(request.settings);
+  }
+});
+
+// INITIALIZATION: Check for saved profile and apply
+chrome.storage.local.get("userProfile", (result) => {
+  if (result.userProfile) {
+    const p = result.userProfile as any;
+    const settings = {
+      fontSize: 16, // Default, hard to infer from "comfortable" vs "compact" without heuristics
+      dyslexiaFont: p.recommended_font === "OpenDyslexic",
+      hideImages: p.features?.image_hiding || false,
+      lineHeight: 0
+    };
+    console.log("A11ySon: Auto-applying saved profile:", settings);
+    updateLiveStyles(settings);
   }
 });
