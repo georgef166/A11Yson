@@ -47,8 +47,12 @@ export const initImageBlocker = () => {
     if ((img as HTMLElement).dataset.a11ysonProcessed) return;
     (img as HTMLElement).dataset.a11ysonProcessed = "true";
 
-    // Skip small icons/spacers
-    if ((img as HTMLElement).offsetWidth > 0 && (img as HTMLElement).offsetWidth < 20) return;
+    // Only hide images that are 2x larger than the magnifying glass (32px * 2 = 64px)
+    const threshold = 64;
+    if ((img as HTMLElement).offsetWidth > 0 &&
+      ((img as HTMLElement).offsetWidth < threshold || (img as HTMLElement).offsetHeight < threshold)) {
+      return;
+    }
 
     const wrapper = document.createElement("div");
     wrapper.className = "a11yson-image-wrapper";

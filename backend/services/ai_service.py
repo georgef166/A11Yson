@@ -101,6 +101,35 @@ async def analyze_profile(quiz_data: dict) -> dict:
             "voice_assistant_persona": "energetic"
         }
 
+async def summarize_text(text: str) -> str:
+    """
+    Uses Gemini to summarize the provided text into a concise, readable summary.
+    """
+    import google.generativeai as genai
+    API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("OPENROUTER_API_KEY")
+    
+    if not API_KEY:
+        return "Summarization skipped: API Key missing."
+
+    try:
+        genai.configure(api_key=API_KEY)
+        model = genai.GenerativeModel('gemini-2.0-flash-exp')
+        
+        prompt = f"""
+        Summarize the following webpage content into a concise, easy-to-read summary. 
+        Focus on the main points and keep it friendly. 
+        The summary should be around 100-200 words.
+        
+        Content:
+        {text[:10000]} 
+        """
+        
+        response = model.generate_content(prompt)
+        return response.text
+    except Exception as e:
+        print(f"Summarization Error: {e}")
+        return "Failed to summarize the content."
+
 async def generate_speech(text: str) -> bytes:
     """
     Uses ElevenLabs to generate speech from text.

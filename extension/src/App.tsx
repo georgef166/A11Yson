@@ -10,6 +10,9 @@ function App() {
   const [hideImages, setHideImages] = useState(false);
   const [fontFamily, setFontFamily] = useState("Default");
   const [grayscale, setGrayscale] = useState(false);
+  const [isSummarizing, setIsSummarizing] = useState(false);
+  const [isDirectCalling, setIsDirectCalling] = useState(false);
+  const [isCallActive, setIsCallActive] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -27,6 +30,7 @@ function App() {
             if (!chrome.runtime.lastError && response) {
               setIsActive(response.isOpen);
               setActiveMode(response.activeTab);
+              setIsCallActive(response.isCallActive);
             }
           },
         );
@@ -68,7 +72,7 @@ function App() {
     };
 
     // Initial Load: Try popupSettings first, then fallback to userProfile
-    chrome.storage.local.get(["popupSettings", "userProfile"], (result) => {
+    chrome.storage.local.get(["popupSettings", "userProfile", "isCallActive"], (result) => {
       if (result.popupSettings) {
         const s = result.popupSettings as any;
         setFontSize(s.fontSize || 16);
@@ -77,6 +81,9 @@ function App() {
         setGrayscale(s.grayscale || false);
       } else if (result.userProfile) {
         loadProfile(result.userProfile);
+      }
+      if (result.isCallActive !== undefined) {
+        setIsCallActive(!!result.isCallActive);
       }
       setIsLoaded(true);
     });
@@ -87,10 +94,24 @@ function App() {
         console.log("Real-time Profile Sync:", changes.userProfile.newValue);
         loadProfile(changes.userProfile.newValue);
       }
+      if (changes.isCallActive) {
+        setIsCallActive(!!changes.isCallActive.newValue);
+      }
     };
     chrome.storage.onChanged.addListener(listener);
-    return () => chrome.storage.onChanged.removeListener(listener);
-  }, []);
+
+    const messageListener = (msg: any) => {
+      if (msg.action === "call_status_update") {
+        setIsCallActive(msg.isCallActive);
+      }
+    };
+    chrome.runtime.onMessage.addListener(messageListener);
+
+    return () => {
+      chrome.storage.onChanged.removeListener(listener);
+      chrome.runtime.onMessage.removeListener(messageListener);
+    };
+  }, [isActive]);
 
   // Send LIVE settings updates & Persist locally
   useEffect(() => {
@@ -115,7 +136,8 @@ function App() {
             tts_enabled: false,
             reduce_motion: false,
           },
-        }
+        },
+        isCallActive: isCallActive,
       });
 
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -143,7 +165,72 @@ function App() {
     };
     const timeout = window.setTimeout(updateLiveSettings, 50);
     return () => window.clearTimeout(timeout);
-  }, [fontSize, hideImages, fontFamily, isActive, grayscale, isLoaded]);
+  }, [fontSize, hideImages, fontFamily, isActive, grayscale, isLoaded, isCallActive]);
+
+  const summarizeAndCall = async () => {
+    setIsSummarizing(true);
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab.id) return;
+
+      console.log("A11Yson: Starting summarization...");
+      // 1. Get Text from Content Script
+      const response = await chrome.tabs.sendMessage(tab.id, { action: "get_page_text" });
+      console.log("A11Yson: Text extraction response:", !!response);
+      const text = response?.text;
+      if (!text) throw new Error("Could not extract text");
+
+      // 2. Get Summary from Backend
+      console.log("A11Yson: Fetching summary from backend...");
+      const sumRes = await fetch("http://localhost:8000/api/summarize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      if (!sumRes.ok) throw new Error("Backend summary failed");
+      const { summary } = await sumRes.json();
+      console.log("A11Yson: Summary received:", summary.substring(0, 50) + "...");
+
+      // 3. Tell Content Script to start the call with FULL TEXT as context
+      await chrome.tabs.sendMessage(tab.id, {
+        action: "start_call",
+        summary: text, // Passing full extracted text for maximum context
+        agentId: "agent_3501kf7qdg2xf3tbkfr7xjmedgdj"
+      });
+
+      console.log("A11Yson: Call started with full page context.");
+    } catch (err: any) {
+      console.error("Summarization failed:", err);
+      alert(`Summarization Error: ${err.message || "Unknown error"}. 
+
+Tip: Make sure you are not on a 'chrome://' page and that you have refreshed the webpage after updating the extension.`);
+    } finally {
+      setIsSummarizing(false);
+    }
+  };
+
+  const startDirectCall = async () => {
+    setIsDirectCalling(true);
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab.id) return;
+
+      console.log("A11Yson: Extracting context for direct call...");
+      const response = await chrome.tabs.sendMessage(tab.id, { action: "get_page_text" });
+      const text = response?.text || "";
+
+      await chrome.tabs.sendMessage(tab.id, {
+        action: "start_call",
+        summary: text,
+        agentId: "agent_3501kf7qdg2xf3tbkfr7xjmedgdj"
+      });
+    } catch (err: any) {
+      console.error("Direct call failed:", err);
+      alert(`Direct call failed: ${err.message}.`);
+    } finally {
+      setIsDirectCalling(false);
+    }
+  };
 
   const openReaderMode = async (mode: string) => {
     const [tab] = await chrome.tabs.query({
@@ -165,6 +252,7 @@ function App() {
     if (tab.id) {
       setIsActive(false);
       setActiveMode(null);
+      setIsCallActive(false); // Also reset call state
       chrome.tabs.sendMessage(tab.id, { action: "close_a11yson" });
     }
   };
@@ -179,7 +267,7 @@ function App() {
           </span>
         </h1>
         <div
-          className={`w-2 h-2 rounded-full ${isActive ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" : "bg-slate-300"}`}
+          className={`w-2 h-2 rounded-full ${isActive || isCallActive ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" : "bg-slate-300"}`}
         />
       </header>
 
@@ -216,7 +304,6 @@ function App() {
             <div className="h-px bg-slate-100 my-2" />
 
             {/* Toggles */}
-            {/* Font Selection Dropdown */}
             <div className="flex flex-col gap-2">
               <span className="text-sm font-medium text-slate-700">Reading Font</span>
               <select
@@ -301,7 +388,7 @@ function App() {
               className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all text-center gap-2 group shadow-sm hover:shadow-md ${activeMode === "sensory" ? "border-purple-500 bg-purple-50" : "border-slate-200 bg-white"}`}
             >
               <span className="text-2xl group-hover:scale-110 transition-transform">
-                🌙
+                🌈
               </span>
               <span className="text-sm font-bold text-slate-700 mt-1">
                 Sensory
@@ -309,7 +396,7 @@ function App() {
             </button>
             <button
               onClick={() => openReaderMode("clean")}
-              className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all text-center gap-2 group shadow-sm hover:shadow-md ${activeMode === "clean" ? "border-slate-400 bg-slate-50" : "border-slate-200 bg-white"}`}
+              className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all text-center gap-2 group shadow-sm hover:shadow-md ${activeMode === "clean" ? "border-gray-500 bg-gray-50" : "border-slate-200 bg-white"}`}
             >
               <span className="text-2xl group-hover:scale-110 transition-transform">
                 ✨
@@ -320,28 +407,78 @@ function App() {
             </button>
           </div>
 
-          {(fontSize !== 16 || hideImages || fontFamily !== "Default" || isActive) && (
+          {/* Live Call Indicator */}
+          {isCallActive && (
+            <div className="flex items-center justify-between p-3 bg-red-50 border border-red-200 rounded-xl animate-pulse mt-1">
+              <div className="flex items-center gap-3">
+                <span className="text-xl">🎙️</span>
+                <div className="flex gap-1 items-center h-4">
+                  <div className="w-1 bg-red-500 h-2 rounded-full animate-[bounce_1s_infinite]"></div>
+                  <div className="w-1 bg-red-500 h-4 rounded-full animate-[bounce_1s_infinite_100ms]"></div>
+                  <div className="w-1 bg-red-500 h-3 rounded-full animate-[bounce_1s_infinite_200ms]"></div>
+                  <div className="w-1 bg-red-500 h-2 rounded-full animate-[bounce_1s_infinite_300ms]"></div>
+                </div>
+              </div>
+              <span className="text-[10px] font-black text-red-600 uppercase tracking-widest">RECORDING LIVE</span>
+            </div>
+          )}
+
+          {/* Action Row */}
+          <div className="flex gap-2 mt-2">
+            <button
+              onClick={summarizeAndCall}
+              disabled={isSummarizing}
+              className={`flex-1 py-4 rounded-xl flex flex-col items-center justify-center gap-1 font-bold text-white transition-all shadow-md active:scale-95 ${isSummarizing ? 'bg-slate-400 cursor-not-allowed' : 'bg-gradient-to-br from-blue-600 to-indigo-600 hover:brightness-110'}`}
+            >
+              {isSummarizing ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span className="text-[10px]">Summarizing...</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-xl">📄</span>
+                  <span className="text-[10px]">Summarize & Talk</span>
+                </>
+              )}
+            </button>
+
+            <button
+              onClick={startDirectCall}
+              disabled={isDirectCalling}
+              className="flex-1 py-4 rounded-xl flex flex-col items-center justify-center gap-1 font-bold text-white transition-all shadow-md active:scale-95 bg-gradient-to-br from-green-600 to-teal-600 hover:brightness-110 disabled:bg-slate-400"
+            >
+              {isDirectCalling ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span className="text-[10px]">Connecting...</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-xl">💬</span>
+                  <span className="text-[10px]">Just Talk (Live)</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* ACTION BUTTONS: RESET */}
+        <div className="pt-2">
+          {(fontSize !== 16 || hideImages || fontFamily !== "Default" || grayscale || isActive || isCallActive) && (
             <button
               onClick={() => {
                 setFontSize(16);
                 setHideImages(false);
                 setFontFamily("Default");
                 setGrayscale(false);
-                chrome.storage.local.remove(["userProfile", "popupSettings"]);
-                closeReader(); // Reset should ALWAYS close the reader
+                setIsCallActive(false);
+                chrome.storage.local.remove(["userProfile", "popupSettings", "isCallActive"]);
+                closeReader();
               }}
-              className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 border border-slate-200 transition-colors mt-1"
+              className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 border border-slate-200 transition-colors"
             >
               <span>↺</span> Reset All Changes
-            </button>
-          )}
-
-          {isActive && (
-            <button
-              onClick={closeReader}
-              className="w-full py-3 bg-red-50 text-red-600 font-bold rounded-xl hover:bg-red-100 transition-colors border border-red-100"
-            >
-              Close Reader Mode
             </button>
           )}
         </div>

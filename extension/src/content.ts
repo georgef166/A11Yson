@@ -135,6 +135,8 @@ window.addEventListener("message", (event) => {
       };
       updateLiveStyles(settings);
     });
+  } else if (event.data.type && event.data.type === "A11YSON_CALL_STARTED") {
+    chrome.storage.local.set({ isCallActive: true });
   }
 });
 
@@ -143,6 +145,81 @@ chrome.runtime.onMessage.addListener((request, _sender, _sendResponse) => {
   console.log("A11Yson: Received message:", request.action);
   if (request.action === "apply_live_settings") {
     updateLiveStyles(request.settings);
+  } else if (request.action === "get_status") {
+    const root = document.getElementById("a11yson-root");
+    const callWidget = document.querySelector('elevenlabs-convai');
+    _sendResponse({
+      isOpen: !!root,
+      activeTab: "clean", // Fallback or track it
+      isCallActive: !!callWidget
+    });
+    return true;
+  } else if (request.action === "get_page_text") {
+    // 1. Clone the body to avoid messing with the live page
+    const bodyClone = document.body.cloneNode(true) as HTMLElement;
+
+    // 2. Aggressively clear out junk from the clone
+    const junkSelectors = [
+      'script', 'style', 'noscript', 'iframe', 'canvas', 'svg', 'header', 'footer', 'nav', 'aside',
+      '[role="banner"]', '[role="navigation"]', '[role="complementary"]', '[role="contentinfo"]',
+      '.header', '#header', '.footer', '#footer', '.nav', '.navigation', '.sidebar', '#sidebar',
+      '.menu', '.menu-container', '.ads', '.advertisement', '.social-share', '.comments', '#comments',
+      '.related-posts', '.pagination', '.newsletter-signup'
+    ];
+    junkSelectors.forEach(sel => {
+      bodyClone.querySelectorAll(sel).forEach(el => el.remove());
+    });
+
+    // 3. Get the clean text
+    const text = bodyClone.innerText
+      .replace(/\s\s+/g, ' ') // Remove double spaces/newlines
+      .trim();
+
+    console.log("A11Yson: [Content] Extracted clean text length:", text.length);
+    _sendResponse({ text });
+    return true;
+  } else if (request.action === "start_call") {
+    const { summary, agentId } = request;
+    console.log("A11Yson: [Content] Starting AI Call with full context...");
+
+    const existing = document.getElementById("a11yson-voice-frame");
+    if (existing) existing.remove();
+
+    const iframe = document.createElement("iframe");
+    iframe.id = "a11yson-voice-frame";
+    iframe.setAttribute("allow", "microphone");
+
+    // Just pass the agentId in URL, data comes via postMessage
+    iframe.src = `http://localhost:8000/voice-widget?agentId=${agentId}`;
+
+    Object.assign(iframe.style, {
+      position: "fixed",
+      bottom: "10px",
+      right: "10px",
+      width: "400px",
+      height: "600px",
+      border: "none",
+      zIndex: "2147483647",
+      background: "transparent",
+      colorScheme: "light",
+      pointerEvents: "auto"
+    });
+
+    iframe.onload = () => {
+      console.log("A11Yson: [Content] Iframe loaded, transmitting high-quality context...");
+      // Reduced delay for faster handshake
+      setTimeout(() => {
+        iframe.contentWindow?.postMessage({
+          type: 'SET_CONTEXT',
+          context: summary
+        }, '*');
+      }, 100);
+    };
+
+    document.body.appendChild(iframe);
+    chrome.storage.local.set({ isCallActive: true });
+    _sendResponse({ success: true });
+    return true;
   }
 });
 
