@@ -1,52 +1,81 @@
-# A11Yson Project
+#  A11Yson: Redefining Digital Accessibility
 
-This project consists of a Next.js frontend and a Python (FastAPI) backend.
+**A11Yson** is an AI-powered cognitive accessibility platform designed to make the web neuro-inclusive. It dynamically adapts content for users with ADHD, Dyslexia, and Sensory processing needs, providing a tailored reading experience that minimizes distractions and maximizes focus.
 
-## Structure
+---
 
-- `frontend/`: Next.js application (Port 3000)
-- `backend/`: FastAPI application (Port 8000)
+## 🚀 Live Links
+- **Web Dashboard:** [https://a11yson.vercel.app](https://a11yson.vercel.app) (Frontend)
+- **AI Backend:** [https://a11yson-backend.onrender.com](https://a11yson-backend.onrender.com) (FastAPI)
 
-## Getting Started
+---
 
-### Prerequisites
+## 🛠️ Project Structure
+- **/frontend**: Next.js dashboard where users take the accessibility quiz and manage their neuro-profile.
+- **/backend**: FastAPI server handling AI summarization, Text-to-Speech (ElevenLabs), and Profile Analysis (Gemini).
+- **/extension**: Chrome Extension that injects the A11Yson "Neuro-Flow" reader into any website.
 
-- Node.js (v18+)
-- Python (v3.10+)
+---
 
-### Running the Backend
+## 🧩 Extension Setup (For Judges)
+The extension is the core of the A11Yson experience. Follow these steps to load it:
 
-1. Navigate to the `backend` directory:
+1. **Download & Build:**
    ```bash
-   cd backend
-   ```
-2. Create and activate a virtual environment (if not already done):
-   ```bash
-   python -m venv .venv
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-   ```
-3. Install dependencies:
-   ```bash
-   pip install fastapi uvicorn
-   ```
-4. Run the backend:
-   ```bash
-   python main.py
-   ```
-
-### Running the Frontend
-
-1. Navigate to the `frontend` directory:
-   ```bash
-   cd frontend
-   ```
-2. Install dependencies:
-   ```bash
+   cd extension
    npm install
+   npm run build
    ```
-3. Run the development server:
-   ```bash
-   npm run dev
-   ```
+2. **Load into Chrome:**
+   - Open Chrome and navigate to `chrome://extensions/`.
+   - Enable **"Developer mode"** (top right toggle).
+   - Click **"Load unpacked"**.
+   - Select the `extension/dist` folder from this project.
+3. **Usage:**
+   - Go to any content-heavy site (e.g., Wikipedia, Medium).
+   - Click the A11Yson logo in your extension toolbar.
+   - **Important:** Click "Talk to A11Yson!" to start a live AI interaction or select a **Neuro-Flow Mode** (ADHD, Dyslexia, Sensory, Clean) to transform the page.
+   - *Note: Refresh the page after loading the extension for the first time.*
 
-Open [http://localhost:3000](http://localhost:3000) to see the application.
+---
+
+## 💻 Local Development
+
+### 1. Backend Setup
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn main:app --reload
+```
+**Required .env:**
+- `GEMINI_API_KEY`
+- `ELEVENLABS_API_KEY`
+- `ELEVENLABS_VOICE_ID`
+
+### 2. Frontend Setup
+```bash
+cd frontend
+npm install
+npm run dev
+```
+**Required .env.local:**
+- `NEXT_PUBLIC_API_URL=http://localhost:8000` (or your Render URL)
+- Firebase Config keys (API_KEY, AUTH_DOMAIN, etc.)
+
+---
+
+## ✨ Features
+- **Neuro-Profile Quiz**: Onboarding that identifies your specific accessibility needs.
+- **Dynamic Neuro-Flow Modes**:
+  - **ADHD Mode**: Bionic reading (bolded prefixes), pomodoro timers, and distraction vignettes.
+  - **Dyslexia Mode**: OpenDyslexic font integration, increased letter spacing, and a "Reading Ruler".
+  - **Sensory Mode**: Muted color palettes and high-contrast, low-stimulation visuals.
+  - **Clean Mode**: Minimalist, distraction-free reading.
+- **A11Yson Voice Assistant**: Talk directly to the webpage using Google Gemini and ElevenLabs to ask questions or summarize complex articles.
+
+---
+
+## 🦎 Developed by the A11Yson Team for Hackville 2026
+*"We make the web easy!"*
