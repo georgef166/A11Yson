@@ -31,24 +31,27 @@ const Overlay: React.FC = () => {
         console.log('A11Yson Overlay: Opening mode:', request.mode);
         setIsOpen(true);
         setActiveTab(request.mode);
+        _sendResponse({});
       } else if (request.action === "update_settings") { // NEW: Handle settings update
         setSettings(prev => ({ ...prev, ...request.settings }));
         // If generic open call included
         if (request.open) setIsOpen(true);
+        _sendResponse({});
       } else if (request.action === "close_a11yson") {
         setIsOpen(false);
+        _sendResponse({});
       } else if (request.action === "get_status") {
         _sendResponse({ isOpen, activeTab });
         return true;
       }
     };
     chrome.runtime.onMessage.addListener(handleMessage);
-    
+
     // Cleanup listener on unmount
     return () => {
       chrome.runtime.onMessage.removeListener(handleMessage);
     };
-  }, [isOpen, activeTab]);
+  }, [isOpen]); // Removed activeTab to stabilize
 
   // Extract content when overlay opens
   useEffect(() => {
@@ -58,26 +61,38 @@ const Overlay: React.FC = () => {
     }
   }, [isOpen, article]);
 
-  // Load Saved Profile on Mount
+  // Handle Profile Sync
+  const applyProfile = (p: any) => {
+    // Set Default Mode based on Condition
+    if (p.primary_condition === "ADHD") setActiveTab('focus');
+    else if (p.primary_condition === "Dyslexia") setActiveTab('dyslexia');
+    else if (p.primary_condition === "Anxiety") setActiveTab('sensory');
+    else if (p.primary_condition === "Clean") setActiveTab('clean');
+
+    // Set Settings
+    setSettings(prev => ({
+      ...prev,
+      hideImages: p.features?.image_hiding || false,
+      fontSize: p.content_density === "chunked" ? 20 : 18
+    }));
+  };
+
+  // Load Saved Profile & Listen for updates
   useEffect(() => {
     chrome.storage.local.get("userProfile", (result) => {
-      if (result.userProfile) {
-        const p = result.userProfile as any;
-
-        // Set Default Mode based on Condition
-        if (p.primary_condition === "ADHD") setActiveTab('focus');
-        else if (p.primary_condition === "Dyslexia") setActiveTab('dyslexia');
-        else if (p.primary_condition === "Anxiety") setActiveTab('sensory');
-        else setActiveTab('clean');
-
-        // Set Settings
-        setSettings(prev => ({
-          ...prev,
-          hideImages: p.features?.image_hiding || false,
-          fontSize: p.content_density === "chunked" ? 20 : 18
-        }));
-      }
+      if (result.userProfile) applyProfile(result.userProfile);
     });
+
+    const storageListener = (changes: any) => {
+      if (changes.userProfile) {
+        console.log("A11ySon Overlay: Profile Sync Update", changes.userProfile.newValue);
+        if (changes.userProfile.newValue) {
+          applyProfile(changes.userProfile.newValue);
+        }
+      }
+    };
+    chrome.storage.onChanged.addListener(storageListener);
+    return () => chrome.storage.onChanged.removeListener(storageListener);
   }, []);
 
 

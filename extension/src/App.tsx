@@ -3,6 +3,7 @@ import './App.css';
 
 function App() {
   const [isActive, setIsActive] = useState(false);
+  const [activeMode, setActiveMode] = useState<string | null>(null);
 
   // Settings State (Live Page)
   const [fontSize, setFontSize] = useState(16);
@@ -17,6 +18,7 @@ function App() {
         chrome.tabs.sendMessage(tab.id, { action: "get_status" }, (response) => {
           if (!chrome.runtime.lastError && response) {
             setIsActive(response.isOpen);
+            setActiveMode(response.activeTab);
           }
         });
       }
@@ -37,6 +39,15 @@ function App() {
       if (p.content_density === "chunked") setFontSize(18);
       else if (p.content_density === "compact") setFontSize(14);
       else setFontSize(16);
+
+      // If storage updated and we have a primary condition, we could auto-switch mode if active
+      if (p.primary_condition) {
+        const modeMap: any = { "ADHD": "focus", "Dyslexia": "dyslexia", "Anxiety": "sensory", "Clean": "clean" };
+        const mappedMode = modeMap[p.primary_condition];
+        if (mappedMode && isActive) {
+          openReaderMode(mappedMode);
+        }
+      }
     };
 
     // Initial Load
@@ -82,20 +93,18 @@ function App() {
   const openReaderMode = async (mode: string) => {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab.id) {
-      chrome.tabs.sendMessage(tab.id, { action: "open_mode", mode }, () => {
-        if (!chrome.runtime.lastError) {
-          setIsActive(true);
-        }
-      });
+      setIsActive(true);
+      setActiveMode(mode);
+      chrome.tabs.sendMessage(tab.id, { action: "open_mode", mode });
     }
   };
 
   const closeReader = async () => {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab.id) {
-      chrome.tabs.sendMessage(tab.id, { action: "close_a11yson" }, () => {
-        setIsActive(false);
-      });
+      setIsActive(false);
+      setActiveMode(null);
+      chrome.tabs.sendMessage(tab.id, { action: "close_a11yson" });
     }
   };
 
@@ -169,22 +178,22 @@ function App() {
 
           <div className="grid grid-cols-2 gap-3">
             <button onClick={() => openReaderMode('focus')}
-              className="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50 transition-all text-center gap-2 group shadow-sm hover:shadow-md">
+              className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all text-center gap-2 group shadow-sm hover:shadow-md ${activeMode === 'focus' ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-white'}`}>
               <span className="text-2xl group-hover:scale-110 transition-transform">🧘</span>
               <span className="text-sm font-bold text-slate-700 mt-1">Focus</span>
             </button>
             <button onClick={() => openReaderMode('dyslexia')}
-              className="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-200 bg-white hover:border-yellow-300 hover:bg-yellow-50 transition-all text-center gap-2 group shadow-sm hover:shadow-md">
+              className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all text-center gap-2 group shadow-sm hover:shadow-md ${activeMode === 'dyslexia' ? 'border-yellow-500 bg-yellow-50' : 'border-slate-200 bg-white'}`}>
               <span className="text-2xl group-hover:scale-110 transition-transform">📖</span>
               <span className="text-sm font-bold text-slate-700 mt-1">Dyslexia</span>
             </button>
             <button onClick={() => openReaderMode('sensory')}
-              className="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-200 bg-white hover:border-slate-400 hover:bg-slate-100 transition-all text-center gap-2 group shadow-sm hover:shadow-md">
+              className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all text-center gap-2 group shadow-sm hover:shadow-md ${activeMode === 'sensory' ? 'border-purple-500 bg-purple-50' : 'border-slate-200 bg-white'}`}>
               <span className="text-2xl group-hover:scale-110 transition-transform">🌙</span>
               <span className="text-sm font-bold text-slate-700 mt-1">Sensory</span>
             </button>
             <button onClick={() => openReaderMode('clean')}
-              className="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 transition-all text-center gap-2 group shadow-sm hover:shadow-md">
+              className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all text-center gap-2 group shadow-sm hover:shadow-md ${activeMode === 'clean' ? 'border-slate-400 bg-slate-50' : 'border-slate-200 bg-white'}`}>
               <span className="text-2xl group-hover:scale-110 transition-transform">✨</span>
               <span className="text-sm font-bold text-slate-700 mt-1">Clean</span>
             </button>
@@ -197,7 +206,7 @@ function App() {
                 setHideImages(false);
                 setDyslexiaFont(false);
                 chrome.storage.local.remove("userProfile");
-                if (isActive) closeReader();
+                closeReader(); // Reset should ALWAYS close the reader
               }}
               className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 border border-slate-200 transition-colors mt-3"
             >
