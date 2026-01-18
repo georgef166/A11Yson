@@ -53,14 +53,30 @@ body {
   color: #888;
 }
 
-/* Fix for range input appearance */
-input[type="range"] {
-  appearance: none;
-  -webkit-appearance: none;
+/* Fix for vendor prefix warnings - add standard appearance property */
+button,
+input[type="button"],
+input[type="reset"],
+input[type="submit"],
+input[type="search"],
+input[type="file"]::file-selector-button {
+  appearance: auto;
 }
 
-/* Fix for button appearance */
-button {
-  appearance: button;
-  -webkit-appearance: button;
+/* Fix for range input appearance */
+input[type="range"] {
+  appearance: slider-horizontal;
+}
+
+/* Fix for vertical-align on block display elements */
+img,
+svg,
+video,
+canvas,
+audio,
+iframe,
+embed,
+object {
+  display: block;
+  /* vertical-align removed - only valid for inline/inline-block elements */
 }
