@@ -207,7 +207,6 @@ chrome.runtime.onMessage.addListener((request, _sender, _sendResponse) => {
 
     iframe.onload = () => {
       console.log("A11Yson: [Content] Iframe loaded, transmitting high-quality context...");
-      // Reduced delay for faster handshake
       setTimeout(() => {
         iframe.contentWindow?.postMessage({
           type: 'SET_CONTEXT',
@@ -220,8 +219,175 @@ chrome.runtime.onMessage.addListener((request, _sender, _sendResponse) => {
     chrome.storage.local.set({ isCallActive: true });
     _sendResponse({ success: true });
     return true;
+  } else if (request.action === "open_mode") {
+    applyReaderMode(request.mode);
+  } else if (request.action === "close_a11yson") {
+    // 1. Remove Reader Styles
+    const readerStyle = document.getElementById("a11yson-reader-mode-styles");
+    if (readerStyle) readerStyle.remove();
+
+    // 2. Remove AI Voice Frame
+    const voiceFrame = document.getElementById("a11yson-voice-frame");
+    if (voiceFrame) voiceFrame.remove();
+
+    // 3. Remove Vignette if exists
+    const vignette = document.getElementById("a11yson-vignette");
+    if (vignette) vignette.remove();
+
+    console.log("A11ySon: Environment Reset Successfully.");
   }
 });
+
+const applyReaderMode = (mode: string) => {
+  let readerStyle = document.getElementById("a11yson-reader-mode-styles") as HTMLStyleElement;
+  if (!readerStyle) {
+    readerStyle = document.createElement("style");
+    readerStyle.id = "a11yson-reader-mode-styles";
+    document.head.appendChild(readerStyle);
+  }
+
+  // Cleanup existing mode-specific elements
+  document.getElementById("a11yson-vignette")?.remove();
+
+  let css = "";
+
+  if (mode === "focus") {
+    // ADHD PRESET - High focus on center content
+    const vignette = document.createElement("div");
+    vignette.id = "a11yson-vignette";
+    Object.assign(vignette.style, {
+      position: "fixed",
+      top: "0", left: "0", width: "100%", height: "100%",
+      pointerEvents: "none",
+      zIndex: "2147483645",
+      background: "radial-gradient(circle, transparent 20%, rgba(0,0,0,0.4) 100%)",
+      transition: "opacity 0.8s ease"
+    });
+    document.body.appendChild(vignette);
+
+    css = `
+      body {
+        background-color: #f1f5f9 !important;
+        transition: background-color 0.5s ease !important;
+      }
+      main, article, .content, #main-content {
+        background: white !important;
+        padding: 40px !important;
+        border-radius: 24px !important;
+        box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1) !important;
+        max-width: 68ch !important;
+        margin: 40px auto !important;
+        position: relative !important;
+        z-index: 2147483646 !important;
+      }
+      p, li {
+        font-family: 'Inter', 'Helvetica', sans-serif !important;
+        line-height: 1.8 !important;
+        font-size: 1.15rem !important;
+        color: #1e293b !important;
+        margin-bottom: 1.5em !important;
+      }
+      header, footer, nav, aside, .ads, .sidebar {
+        opacity: 0.1 !important;
+        filter: blur(4px) !important;
+        pointer-events: none !important;
+      }
+      * { animation: none !important; }
+    `;
+  } else if (mode === "dyslexia") {
+    // DYSLEXIA PRESET - Improved spacing and reduced glare
+    css = `
+      body {
+        background-color: #fdf6e3 !important; /* Solarized base3 - extremely easy on eyes */
+        background-image: linear-gradient(rgba(0,0,0,0.01) 1px, transparent 1px) !important;
+        background-size: 100% 1.8em !important; /* Subtle reading lines */
+      }
+      * {
+        font-family: 'Helvetica', 'Arial', sans-serif !important;
+        color: #586e75 !important;
+        text-align: left !important;
+        letter-spacing: 0.05em !important;
+        word-spacing: 0.15em !important;
+      }
+      p, li, div {
+        line-height: 1.9 !important;
+        font-size: 1.2rem !important;
+        max-width: 75ch !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+      }
+      h1, h2, h3 {
+        color: #268bd2 !important;
+        margin-top: 1.5em !important;
+        margin-bottom: 0.5em !important;
+        font-weight: 800 !important;
+      }
+    `;
+  } else if (mode === "sensory") {
+    // SENSORY PRESET - Muted and predictable
+    css = `
+      * {
+        background-color: #e2e8f0 !important;
+        color: #64748b !important;
+        border-color: #cbd5e1 !important;
+        box-shadow: none !important;
+        text-shadow: none !important;
+        transition: none !important;
+        animation: none !important;
+      }
+      body {
+        background-color: #e2e8f0 !important;
+      }
+      img, video, iframe, canvas {
+        display: none !important;
+      }
+      header, nav, aside, footer {
+        display: none !important;
+      }
+      p, li {
+        font-size: 1.1rem !important;
+        line-height: 1.6 !important;
+        max-width: 700px !important;
+        margin: 20px auto !important;
+      }
+    `;
+  } else if (mode === "clean") {
+    // CLEAN PRESET - Foundations of AA
+    css = `
+      * {
+        font-family: 'Inter', system-ui, sans-serif !important;
+        color: #000000 !important;
+      }
+      body {
+        background-color: #ffffff !important;
+        padding: 4% !important;
+      }
+      main, article {
+        max-width: 900px !important;
+        margin: 0 auto !important;
+      }
+      p, .article-content div, main div {
+        line-height: 1.8 !important;
+        font-size: 1.2rem !important;
+        margin-bottom: 2.5rem !important;
+        display: block !important;
+      }
+      li {
+        margin-bottom: 1rem !important;
+      }
+      a {
+        color: #2563eb !important;
+        text-decoration: underline !important;
+        font-weight: 600 !important;
+      }
+      nav, footer, aside, .ads {
+        display: none !important;
+      }
+    `;
+  }
+
+  readerStyle.textContent = css;
+};
 
 // INITIALIZATION: Check for saved profile and apply
 chrome.storage.local.get(["userProfile", "popupSettings"], (result) => {

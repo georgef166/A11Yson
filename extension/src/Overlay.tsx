@@ -216,31 +216,50 @@ const Overlay: React.FC = () => {
               {activeTab === 'clean' && <CleanMode article={article} settings={settings} />}
             </div>
           ) : (
-            // GRID VIEW (The "Explosion")
-            <div className="grid grid-cols-2 grid-rows-2 h-full w-full">
-              <div className="border-r border-b border-gray-200 relative overflow-hidden">
-                <div className="absolute inset-0 scale-[0.8] origin-top-left w-[125%] h-[125%]">
+            // GRID VIEW (The "Neuro-Flow Dashboard")
+            <div className="grid grid-cols-2 grid-rows-2 h-full w-full bg-slate-200 gap-1 p-1">
+              {/* ADHD QUADRANT */}
+              <div className="bg-white relative overflow-hidden group shadow-[inset_0_0_40px_rgba(0,0,0,0.02)]">
+                <div className="absolute top-4 left-6 z-[60] flex items-center gap-2">
+                  <span className="p-1 bg-blue-600 text-white rounded text-[10px] font-black uppercase tracking-tighter">ADHD Mode</span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Focus • Bionic Prefix</span>
+                </div>
+                <div className="absolute inset-0 scale-[0.6] origin-top-left w-[166.6%] h-[166.6%] pointer-events-none">
                   <FocusMode article={article} settings={settings} />
                 </div>
-                <div className="absolute top-2 left-2 bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded">ADHD</div>
               </div>
-              <div className="border-b border-gray-200 relative overflow-hidden">
-                <div className="absolute inset-0 scale-[0.8] origin-top-left w-[125%] h-[125%]">
+
+              {/* DYSLEXIA QUADRANT */}
+              <div className="bg-[#fdf6e3] relative overflow-hidden group shadow-[inset_0_0_40px_rgba(0,0,0,0.02)]">
+                <div className="absolute top-4 left-6 z-[60] flex items-center gap-2">
+                  <span className="p-1 bg-amber-600 text-white rounded text-[10px] font-black uppercase tracking-tighter">Dyslexia</span>
+                  <span className="text-[10px] text-amber-700/60 font-bold uppercase tracking-widest">Spaced • Solarized</span>
+                </div>
+                <div className="absolute inset-0 scale-[0.6] origin-top-left w-[166.6%] h-[166.6%] pointer-events-none">
                   <DyslexiaMode article={article} settings={settings} />
                 </div>
-                <div className="absolute top-2 left-2 bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-1 rounded">Dyslexia</div>
               </div>
-              <div className="border-r border-gray-200 relative overflow-hidden">
-                <div className="absolute inset-0 scale-[0.8] origin-top-left w-[125%] h-[125%]">
+
+              {/* SENSORY QUADRANT */}
+              <div className="bg-[#1a1c1e] relative overflow-hidden group shadow-[inset_0_0_40px_rgba(0,0,0,0.1)]">
+                <div className="absolute top-4 left-6 z-[60] flex items-center gap-2">
+                  <span className="p-1 bg-emerald-600 text-white rounded text-[10px] font-black uppercase tracking-tighter">Sensory</span>
+                  <span className="text-[10px] text-emerald-400/50 font-bold uppercase tracking-widest">Muted • Low Stim</span>
+                </div>
+                <div className="absolute inset-0 scale-[0.6] origin-top-left w-[166.6%] h-[166.6%] pointer-events-none">
                   <SensoryMode article={article} settings={settings} />
                 </div>
-                <div className="absolute top-2 left-2 bg-green-900 text-green-100 text-xs font-bold px-2 py-1 rounded">Sensory</div>
               </div>
-              <div className="relative overflow-hidden bg-white">
-                <div className="absolute inset-0 scale-[0.8] origin-top-left w-[125%] h-[125%]">
+
+              {/* CLEAN QUADRANT */}
+              <div className="bg-white relative overflow-hidden group shadow-[inset_0_0_40px_rgba(0,0,0,0.02)]">
+                <div className="absolute top-4 left-6 z-[60] flex items-center gap-2">
+                  <span className="p-1 bg-slate-900 text-white rounded text-[10px] font-black uppercase tracking-tighter">Standard</span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Minimal • AA Compliant</span>
+                </div>
+                <div className="absolute inset-0 scale-[0.6] origin-top-left w-[166.6%] h-[166.6%] pointer-events-none">
                   <CleanMode article={article} settings={settings} />
                 </div>
-                <div className="absolute top-2 left-2 bg-gray-100 text-gray-800 text-xs font-bold px-2 py-1 rounded">Clean</div>
               </div>
             </div>
           )

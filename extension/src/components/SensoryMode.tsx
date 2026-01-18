@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import type { ArticleData, OverlaySettings } from '../types';
+import { getCleanParagraphs } from '../utils/contentCleaner';
 
 interface Props {
     article: ArticleData;
@@ -7,22 +8,36 @@ interface Props {
 }
 
 const SensoryMode: React.FC<Props> = ({ article, settings }) => {
-    return (
-        <div className="animate-in fade-in duration-300 h-full overflow-y-auto bg-gray-900" style={{ fontSize: `${settings.fontSize}px` }}>
-            <div className="flex justify-between items-center mb-8 sticky top-0 bg-gray-900/95 backdrop-blur py-4 border-b border-gray-800 z-10 px-8">
-                <div>
-                    <h2 className="text-sm font-bold text-green-400 uppercase tracking-widest mb-1">Sensory Safe</h2>
-                    <p className="text-gray-400 text-sm">Dark mode with simplified structure.</p>
-                </div>
-            </div>
+    const [paragraphs, setParagraphs] = useState<string[]>([]);
 
-            <div className="px-8 pb-12 text-gray-300">
-                <h1 className="text-3xl font-bold mb-8 text-gray-100">{article.title}</h1>
-                <div className="prose prose-invert prose-lg max-w-none">
-                    {article.textContent.split('\n').map((para, i) => (
-                        para.trim() && <p key={i} className="mb-6 leading-loose">{para}</p>
+    useEffect(() => {
+        setParagraphs(getCleanParagraphs(article.content));
+    }, [article.content]);
+
+    return (
+        <div className="h-full overflow-y-auto bg-[#1a1c1e] text-[#a0aab4]" style={{ fontSize: `${settings.fontSize}px` }}>
+            <div className="max-w-3xl mx-auto px-12 py-20">
+                <header className="mb-16 border-l-4 border-[#3c444c] pl-8">
+                    <h2 className="text-[10px] font-bold text-[#5c646c] uppercase tracking-[0.3em] mb-4">Sensory Support Mode</h2>
+                    <h1 className="text-3xl font-medium text-[#e2e8f0] leading-snug">
+                        {article.title}
+                    </h1>
+                </header>
+
+                <main className="space-y-10">
+                    {paragraphs.map((para, i) => (
+                        <p
+                            key={i}
+                            className="leading-relaxed text-lg font-normal tracking-normal opacity-90 hover:opacity-100 transition-opacity duration-700"
+                        >
+                            {para}
+                        </p>
                     ))}
-                </div>
+                </main>
+
+                <footer className="mt-20 pt-10 border-t border-[#3c444c] text-center">
+                    <p className="text-[10px] uppercase tracking-widest text-[#5c646c]">End of Content • Neutral Environment Active</p>
+                </footer>
             </div>
         </div>
     );
