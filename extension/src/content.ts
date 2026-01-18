@@ -30,11 +30,8 @@ const updateLiveStyles = (settings: { fontSize: number; dyslexiaFont: boolean; h
   }
 
   if (dyslexiaFont) {
+    // Font is loaded via @fontsource/opendyslexic npm package, no need for @font-face
     css += `
-            @font-face {
-                font-family: 'OpenDyslexic';
-                src: url('${chrome.runtime.getURL('assets/OpenDyslexic-Regular.otf')}') format('opentype');
-            }
             * {
                 font-family: 'OpenDyslexic', 'Comic Sans MS', sans-serif !important;
             }
@@ -66,8 +63,12 @@ const updateLiveStyles = (settings: { fontSize: number; dyslexiaFont: boolean; h
 
 // Function to inject the overlay
 function injectOverlay() {
+  console.log('A11Yson: Attempting to inject overlay...');
   const existingRoot = document.getElementById('a11yson-root');
-  if (existingRoot) return;
+  if (existingRoot) {
+    console.log('A11Yson: Overlay already exists, skipping injection');
+    return;
+  }
 
   const rootDiv = document.createElement('div');
   rootDiv.id = 'a11yson-root';
@@ -97,6 +98,7 @@ function injectOverlay() {
 
   const root = ReactDOM.createRoot(reactContainer);
   root.render(React.createElement(Overlay));
+  console.log('A11Yson: Overlay injected successfully');
 }
 
 injectOverlay();
@@ -122,6 +124,7 @@ window.addEventListener("message", (event) => {
 
 // Listen for Popup Messages (Live Settings)
 chrome.runtime.onMessage.addListener((request, _sender, _sendResponse) => {
+  console.log('A11Yson: Received message:', request.action);
   if (request.action === "apply_live_settings") {
     updateLiveStyles(request.settings);
   }

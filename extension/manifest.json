@@ -4,7 +4,9 @@
   "version": "1.0.0",
   "description": "A cognitive accessibility tool that reimagines content for focus and readability.",
   "action": {
-    "default_popup": "index.html"
+    "default_popup": "index.html",
+    "default_popup_width": 380,
+    "default_popup_height": 600
   },
   "content_scripts": [
     {
@@ -12,11 +14,6 @@
       "matches": ["<all_urls>"]
     }
   ],
-  "permissions": [
-    "activeTab",
-    "scripting"
-  ],
-  "host_permissions": [
-    "<all_urls>"
-  ]
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": ["<all_urls>"]
 }

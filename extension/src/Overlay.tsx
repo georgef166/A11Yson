@@ -24,9 +24,11 @@ const Overlay: React.FC = () => {
   // Message Listener
   useEffect(() => {
     const handleMessage = (request: any, _sender: any, _sendResponse: any) => {
+      console.log('A11Yson Overlay: Received message:', request.action);
       if (request.action === "toggle_a11yson") {
         setIsOpen(prev => !prev);
       } else if (request.action === "open_mode") {
+        console.log('A11Yson Overlay: Opening mode:', request.mode);
         setIsOpen(true);
         setActiveTab(request.mode);
       } else if (request.action === "update_settings") { // NEW: Handle settings update
@@ -41,10 +43,20 @@ const Overlay: React.FC = () => {
       }
     };
     chrome.runtime.onMessage.addListener(handleMessage);
+    
+    // Cleanup listener on unmount
+    return () => {
+      chrome.runtime.onMessage.removeListener(handleMessage);
+    };
+  }, [isOpen, activeTab]);
+
+  // Extract content when overlay opens
+  useEffect(() => {
     if (isOpen && !article) {
+      console.log('A11Yson Overlay: Extracting content...');
       extractContent();
     }
-  }, [isOpen]);
+  }, [isOpen, article]);
 
   // Load Saved Profile on Mount
   useEffect(() => {
