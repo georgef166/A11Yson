@@ -101,19 +101,29 @@ export default function QuizPage() {
   const submitQuiz = async (finalAnswers: any) => {
     setIsAnalyzing(true);
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      const response = await fetch(`${apiUrl}/api/analyze-profile`, {
+      let baseUrl = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/$/, "");
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout guard
+
+      const response = await fetch(`${baseUrl}/api/analyze-profile`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(finalAnswers),
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
       const data = await response.json();
       localStorage.setItem("a11yson_profile", JSON.stringify(data));
       window.postMessage({ type: "A11YSON_PROFILE_UPDATE", profile: data }, "*");
       router.push("/profile");
     } catch (error) {
       console.error("Analysis failed:", error);
-      setIsAnalyzing(false);
+      // Fallback: If AI fails or times out, save a default ADHD profile so the user isn't stuck
+      const fallbackData = { primary_condition: "ADHD", explanation: "AI analysis timed out. Applying default safe profile." };
+      localStorage.setItem("a11yson_profile", JSON.stringify(fallbackData));
+      router.push("/profile");
     }
   };
 
