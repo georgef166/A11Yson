@@ -38,7 +38,7 @@ function App() {
   useEffect(() => {
     const loadProfile = (data?: any) => {
       const p = data || {};
-      if (p.recommended_font === "OpenDyslexic") setDyslexiaFont(true);
+      if (p.recommended_font === "Helvetica") setDyslexiaFont(true);
       else setDyslexiaFont(false);
 
       if (p.features?.image_hiding) setHideImages(true);
@@ -93,19 +93,12 @@ function App() {
   // Send LIVE settings updates & Persist locally
   useEffect(() => {
     const updateLiveSettings = async () => {
-<<<<<<< HEAD
-      const [tab] = await chrome.tabs.query({
-        active: true,
-        currentWindow: true,
-      });
-=======
       // Save for popup persistence
       chrome.storage.local.set({
         popupSettings: { fontSize, hideImages, dyslexiaFont, grayscale }
       });
 
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
->>>>>>> b2cd69a (Fixed issue with settings saving)
       if (tab.id) {
         // Live page CSS injection
         chrome.tabs.sendMessage(tab.id, {

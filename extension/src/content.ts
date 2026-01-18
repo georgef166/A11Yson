@@ -2,11 +2,13 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import Overlay from "./Overlay";
 import styles from "./index.css?inline";
+import { initImageBlocker } from "./features/imageBlocker";
 
 console.log("A11Yson Content Script Loaded");
 
 // --- Live Page Modification Logic ---
 let styleElement: HTMLStyleElement | null = null;
+let imageBlockerCleanup: (() => void) | null = null;
 
 const updateLiveStyles = (settings: {
   fontSize: number;
@@ -39,18 +41,20 @@ const updateLiveStyles = (settings: {
   if (dyslexiaFont) {
     css += `
             * {
-                font-family: 'OpenDyslexic', 'Comic Sans MS', sans-serif !important;
+                font-family: 'Helvetica', 'Arial', sans-serif !important;
             }
         `;
   }
 
   if (hideImages) {
-    css += `
-            img, video, picture, svg, canvas, embed, object {
-                opacity: 0 !important;
-                visibility: hidden !important;
-            }
-        `;
+    if (!imageBlockerCleanup) {
+      imageBlockerCleanup = initImageBlocker();
+    }
+  } else {
+    if (imageBlockerCleanup) {
+      imageBlockerCleanup();
+      imageBlockerCleanup = null;
+    }
   }
 
   if (lineHeight > 0) {
@@ -124,7 +128,7 @@ window.addEventListener("message", (event) => {
       // Apply Immediately!
       const settings = {
         fontSize: 16,
-        dyslexiaFont: p.recommended_font === "OpenDyslexic",
+        dyslexiaFont: p.recommended_font === "Helvetica",
         hideImages: p.features?.image_hiding || false,
         lineHeight: 0,
         grayscale: p.contrast_preference === "grayscale",
@@ -159,7 +163,7 @@ chrome.storage.local.get(["userProfile", "popupSettings"], (result) => {
     const p = result.userProfile as any;
     const settings = {
       fontSize: 16, // Default, hard to infer from "comfortable" vs "compact" without heuristics
-      dyslexiaFont: p.recommended_font === "OpenDyslexic",
+      dyslexiaFont: p.recommended_font === "Helvetica",
       hideImages: p.features?.image_hiding || false,
       lineHeight: 0,
       grayscale: p.contrast_preference === "grayscale",
