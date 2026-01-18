@@ -41,35 +41,20 @@ const updateLiveStyles = (settings: {
   if (dyslexiaFont) {
     css += `
             * {
-                font-family: 'OpenDyslexic', 'Comic Sans MS', sans-serif !important;
+                font-family: 'Helvetica', 'Arial', sans-serif !important;
             }
         `;
   }
 
   if (hideImages) {
-    // Initialize image blocker with blur + reveal button
     if (!imageBlockerCleanup) {
       imageBlockerCleanup = initImageBlocker();
     }
   } else {
-    // Cleanup image blocker
     if (imageBlockerCleanup) {
       imageBlockerCleanup();
       imageBlockerCleanup = null;
     }
-    // Remove blur styling and wrappers
-    const style = document.getElementById("a11yson-image-blocker");
-    if (style) style.remove();
-
-    // Unwrap images from wrappers
-    document.querySelectorAll(".a11yson-image-wrapper").forEach((wrapper) => {
-      const image = wrapper.querySelector("img, video, canvas");
-      if (image) {
-        image.classList.remove("a11yson-censored", "a11yson-revealed");
-        wrapper.parentNode?.insertBefore(image, wrapper);
-        wrapper.remove();
-      }
-    });
   }
 
   if (lineHeight > 0) {
@@ -143,7 +128,7 @@ window.addEventListener("message", (event) => {
       // Apply Immediately!
       const settings = {
         fontSize: 16,
-        dyslexiaFont: p.recommended_font === "OpenDyslexic",
+        dyslexiaFont: p.recommended_font === "Helvetica",
         hideImages: p.features?.image_hiding || false,
         lineHeight: 0,
         grayscale: p.contrast_preference === "grayscale",
@@ -162,12 +147,23 @@ chrome.runtime.onMessage.addListener((request, _sender, _sendResponse) => {
 });
 
 // INITIALIZATION: Check for saved profile and apply
-chrome.storage.local.get("userProfile", (result) => {
-  if (result.userProfile) {
+chrome.storage.local.get(["userProfile", "popupSettings"], (result) => {
+  if (result.popupSettings) {
+    const s = result.popupSettings as any;
+    const settings = {
+      fontSize: s.fontSize || 16,
+      dyslexiaFont: s.dyslexiaFont || false,
+      hideImages: s.hideImages || false,
+      lineHeight: s.lineHeight || 0,
+      grayscale: s.grayscale || false,
+    };
+    console.log("A11ySon: Auto-applying stashed popup settings:", settings);
+    updateLiveStyles(settings);
+  } else if (result.userProfile) {
     const p = result.userProfile as any;
     const settings = {
       fontSize: 16, // Default, hard to infer from "comfortable" vs "compact" without heuristics
-      dyslexiaFont: p.recommended_font === "OpenDyslexic",
+      dyslexiaFont: p.recommended_font === "Helvetica",
       hideImages: p.features?.image_hiding || false,
       lineHeight: 0,
       grayscale: p.contrast_preference === "grayscale",

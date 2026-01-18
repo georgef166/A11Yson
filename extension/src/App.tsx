@@ -38,7 +38,7 @@ function App() {
   useEffect(() => {
     const loadProfile = (data?: any) => {
       const p = data || {};
-      if (p.recommended_font === "OpenDyslexic") setDyslexiaFont(true);
+      if (p.recommended_font === "Helvetica") setDyslexiaFont(true);
       else setDyslexiaFont(false);
 
       if (p.features?.image_hiding) setHideImages(true);
@@ -66,9 +66,17 @@ function App() {
       }
     };
 
-    // Initial Load
-    chrome.storage.local.get("userProfile", (result) => {
-      if (result.userProfile) loadProfile(result.userProfile);
+    // Initial Load: Try popupSettings first, then fallback to userProfile
+    chrome.storage.local.get(["popupSettings", "userProfile"], (result) => {
+      if (result.popupSettings) {
+        const s = result.popupSettings as any;
+        setFontSize(s.fontSize || 16);
+        setHideImages(s.hideImages || false);
+        setDyslexiaFont(s.dyslexiaFont || false);
+        setGrayscale(s.grayscale || false);
+      } else if (result.userProfile) {
+        loadProfile(result.userProfile);
+      }
     });
 
     // Listen for Sync from Dashboard
@@ -82,13 +90,15 @@ function App() {
     return () => chrome.storage.onChanged.removeListener(listener);
   }, []);
 
-  // Send LIVE settings updates
+  // Send LIVE settings updates & Persist locally
   useEffect(() => {
     const updateLiveSettings = async () => {
-      const [tab] = await chrome.tabs.query({
-        active: true,
-        currentWindow: true,
+      // Save for popup persistence
+      chrome.storage.local.set({
+        popupSettings: { fontSize, hideImages, dyslexiaFont, grayscale }
       });
+
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (tab.id) {
         // Live page CSS injection
         chrome.tabs.sendMessage(tab.id, {
@@ -318,7 +328,7 @@ function App() {
                 setHideImages(false);
                 setDyslexiaFont(false);
                 setGrayscale(false);
-                chrome.storage.local.remove("userProfile");
+                chrome.storage.local.remove(["userProfile", "popupSettings"]);
                 closeReader(); // Reset should ALWAYS close the reader
               }}
               className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 border border-slate-200 transition-colors mt-3"
