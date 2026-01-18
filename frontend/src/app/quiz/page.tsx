@@ -100,30 +100,61 @@ export default function QuizPage() {
 
   const submitQuiz = async (finalAnswers: any) => {
     setIsAnalyzing(true);
+
     try {
-      let baseUrl = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/$/, "");
+      // 1. Determine API URL
+      let baseUrl = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "");
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout guard
+      // If we are on production but API is missing, or it's localhost on https, it might fail.
+      // We'll wrap the fetch in a check.
+      let data = null;
 
-      const response = await fetch(`${baseUrl}/api/analyze-profile`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(finalAnswers),
-        signal: controller.signal
-      });
+      if (baseUrl) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-      clearTimeout(timeoutId);
-      const data = await response.json();
+          const response = await fetch(`${baseUrl}/api/analyze-profile`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(finalAnswers),
+            signal: controller.signal
+          });
+
+          clearTimeout(timeoutId);
+          if (response.ok) {
+            data = await response.json();
+          }
+        } catch (fetchErr) {
+          console.error("Fetch failed:", fetchErr);
+        }
+      }
+
+      // 2. Fallback if API failed or no URL
+      if (!data) {
+        data = {
+          primary_condition: "ADHD",
+          explanation: "AI analysis was unavailable. Applying safe default profile."
+        };
+      }
+
+      // 3. Persist and Redirect
       localStorage.setItem("a11yson_profile", JSON.stringify(data));
-      window.postMessage({ type: "A11YSON_PROFILE_UPDATE", profile: data }, "*");
+
+      // Try router first
       router.push("/profile");
+
+      // Forced fallback redirect in case router hangs
+      setTimeout(() => {
+        if (window.location.pathname !== "/profile") {
+          window.location.href = "/profile";
+        }
+      }, 3000);
+
     } catch (error) {
-      console.error("Analysis failed:", error);
-      // Fallback: If AI fails or times out, save a default ADHD profile so the user isn't stuck
-      const fallbackData = { primary_condition: "ADHD", explanation: "AI analysis timed out. Applying default safe profile." };
-      localStorage.setItem("a11yson_profile", JSON.stringify(fallbackData));
-      router.push("/profile");
+      console.error("Critical submission error:", error);
+      // Emergency redirect
+      window.location.href = "/profile";
     }
   };
 
