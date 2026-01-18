@@ -2,13 +2,11 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import Overlay from "./Overlay";
 import styles from "./index.css?inline";
-import { initImageBlocker } from "./features/imageBlocker";
 
 console.log("A11Yson Content Script Loaded");
 
 // --- Live Page Modification Logic ---
 let styleElement: HTMLStyleElement | null = null;
-let imageBlockerCleanup: (() => void) | null = null;
 
 const updateLiveStyles = (settings: {
   fontSize: number;
@@ -47,29 +45,12 @@ const updateLiveStyles = (settings: {
   }
 
   if (hideImages) {
-    // Initialize image blocker with blur + reveal button
-    if (!imageBlockerCleanup) {
-      imageBlockerCleanup = initImageBlocker();
-    }
-  } else {
-    // Cleanup image blocker
-    if (imageBlockerCleanup) {
-      imageBlockerCleanup();
-      imageBlockerCleanup = null;
-    }
-    // Remove blur styling and wrappers
-    const style = document.getElementById("a11yson-image-blocker");
-    if (style) style.remove();
-
-    // Unwrap images from wrappers
-    document.querySelectorAll(".a11yson-image-wrapper").forEach((wrapper) => {
-      const image = wrapper.querySelector("img, video, canvas");
-      if (image) {
-        image.classList.remove("a11yson-censored", "a11yson-revealed");
-        wrapper.parentNode?.insertBefore(image, wrapper);
-        wrapper.remove();
-      }
-    });
+    css += `
+            img, video, picture, svg, canvas, embed, object {
+                opacity: 0 !important;
+                visibility: hidden !important;
+            }
+        `;
   }
 
   if (lineHeight > 0) {
