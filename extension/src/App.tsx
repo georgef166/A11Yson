@@ -170,7 +170,7 @@ function App() {
   };
 
   return (
-    <div className="w-[340px] bg-slate-50 text-slate-900 font-sans">
+    <div className="w-full min-h-screen bg-slate-50 text-slate-900 font-sans">
       <header className="flex items-center justify-between p-4 bg-white border-b border-slate-200">
         <h1 className="text-xl font-bold text-blue-600 tracking-tight">
           A11Yson{" "}
@@ -183,9 +183,9 @@ function App() {
         />
       </header>
 
-      <main className="p-4 space-y-6">
+      <main className="p-4 space-y-3">
         {/* LIVE PAGE TOOLS - ALWAYS VISIBLE */}
-        <div className="space-y-4">
+        <div className="space-y-2">
           <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-1">
             Live Page Tools
           </h2>
@@ -264,17 +264,14 @@ function App() {
         </div>
 
         {/* READER MODES */}
-        <div className="space-y-4">
-          <div className="flex justify-between items-center pl-1">
-            <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-              Neuro-Flow Active Reader
-            </h2>
-            {isActive && (
+        <div className="space-y-3">
+          {isActive && (
+            <div className="flex justify-end pr-1">
               <span className="text-xs text-green-600 font-bold bg-green-100 px-2 py-0.5 rounded-full">
                 Active
               </span>
-            )}
-          </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <button
@@ -333,7 +330,7 @@ function App() {
                 chrome.storage.local.remove(["userProfile", "popupSettings"]);
                 closeReader(); // Reset should ALWAYS close the reader
               }}
-              className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 border border-slate-200 transition-colors mt-3"
+              className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 border border-slate-200 transition-colors mt-1"
             >
               <span>↺</span> Reset All Changes
             </button>

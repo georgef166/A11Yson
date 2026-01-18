@@ -5,9 +5,9 @@
 }
 
 body {
-  min-width: 380px;
-  min-height: 600px;
-  overflow: hidden;
+  min-width: 340px;
+  min-height: 400px;
+  overflow-x: hidden;
 }
 
 #root {
