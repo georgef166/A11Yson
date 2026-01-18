@@ -8,7 +8,7 @@ function App() {
   // Settings State (Live Page)
   const [fontSize, setFontSize] = useState(16);
   const [hideImages, setHideImages] = useState(false);
-  const [dyslexiaFont, setDyslexiaFont] = useState(false);
+  const [fontFamily, setFontFamily] = useState("Default");
   const [grayscale, setGrayscale] = useState(false);
 
   useEffect(() => {
@@ -38,8 +38,8 @@ function App() {
   useEffect(() => {
     const loadProfile = (data?: any) => {
       const p = data || {};
-      if (p.recommended_font === "Helvetica") setDyslexiaFont(true);
-      else setDyslexiaFont(false);
+      if (p.recommended_font) setFontFamily(p.recommended_font);
+      else setFontFamily("Default");
 
       if (p.features?.image_hiding) setHideImages(true);
       else setHideImages(false);
@@ -72,7 +72,7 @@ function App() {
         const s = result.popupSettings as any;
         setFontSize(s.fontSize || 16);
         setHideImages(s.hideImages || false);
-        setDyslexiaFont(s.dyslexiaFont || false);
+        setFontFamily(s.fontFamily || "Default");
         setGrayscale(s.grayscale || false);
       } else if (result.userProfile) {
         loadProfile(result.userProfile);
@@ -95,7 +95,7 @@ function App() {
     const updateLiveSettings = async () => {
       // Save for popup persistence
       chrome.storage.local.set({
-        popupSettings: { fontSize, hideImages, dyslexiaFont, grayscale }
+        popupSettings: { fontSize, hideImages, fontFamily, grayscale }
       });
 
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -106,7 +106,7 @@ function App() {
           settings: {
             fontSize,
             hideImages,
-            dyslexiaFont,
+            fontFamily,
             lineHeight: 0,
             grayscale,
           },
@@ -123,7 +123,7 @@ function App() {
     };
     const timeout = window.setTimeout(updateLiveSettings, 50);
     return () => window.clearTimeout(timeout);
-  }, [fontSize, hideImages, dyslexiaFont, isActive, grayscale]);
+  }, [fontSize, hideImages, fontFamily, isActive, grayscale]);
 
   const openReaderMode = async (mode: string) => {
     const [tab] = await chrome.tabs.query({
@@ -196,18 +196,21 @@ function App() {
             <div className="h-px bg-slate-100 my-2" />
 
             {/* Toggles */}
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-slate-700">
-                Helvetica (Clean Font)
-              </span>
-              <button
-                onClick={() => setDyslexiaFont(!dyslexiaFont)}
-                className={`w-11 h-6 rounded-full transition-colors relative ${dyslexiaFont ? "bg-yellow-500" : "bg-slate-200"}`}
+            {/* Font Selection Dropdown */}
+            <div className="flex flex-col gap-2">
+              <span className="text-sm font-medium text-slate-700">Reading Font</span>
+              <select
+                value={fontFamily}
+                onChange={(e) => setFontFamily(e.target.value)}
+                className="w-full p-2 rounded-lg border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               >
-                <div
-                  className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-transform ${dyslexiaFont ? "left-6" : "left-1"}`}
-                />
-              </button>
+                <option value="Default">Default Site Font</option>
+                <option value="Calibri">Calibri</option>
+                <option value="Helvetica">Helvetica</option>
+                <option value="Arial">Arial</option>
+                <option value="Verdana">Verdana</option>
+                <option value="Times New Roman">Times New Roman</option>
+              </select>
             </div>
 
             <div className="flex items-center justify-between">
@@ -300,12 +303,12 @@ function App() {
             </button>
           </div>
 
-          {(fontSize !== 16 || hideImages || dyslexiaFont || isActive) && (
+          {(fontSize !== 16 || hideImages || fontFamily !== "Default" || isActive) && (
             <button
               onClick={() => {
                 setFontSize(16);
                 setHideImages(false);
-                setDyslexiaFont(false);
+                setFontFamily("Default");
                 setGrayscale(false);
                 chrome.storage.local.remove(["userProfile", "popupSettings"]);
                 closeReader(); // Reset should ALWAYS close the reader
