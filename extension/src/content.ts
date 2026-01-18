@@ -158,13 +158,8 @@ chrome.storage.local.get(["userProfile", "popupSettings"], (result) => {
   } else if (result.userProfile) {
     const p = result.userProfile as any;
     const settings = {
-<<<<<<< HEAD
       fontSize: 16, // Default, hard to infer from "comfortable" vs "compact" without heuristics
       dyslexiaFont: p.recommended_font === "OpenDyslexic",
-=======
-      fontSize: 16,
-      dyslexiaFont: p.recommended_font === "Helvetica",
->>>>>>> b2cd69a (Fixed issue with settings saving)
       hideImages: p.features?.image_hiding || false,
       lineHeight: 0,
       grayscale: p.contrast_preference === "grayscale",
