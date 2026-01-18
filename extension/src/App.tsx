@@ -115,6 +115,27 @@ function App() {
     return () => window.clearTimeout(timeout);
   }, [fontSize, hideImages, dyslexiaFont, isActive, grayscale]);
 
+  // Save settings to storage whenever they change
+  useEffect(() => {
+    const profile = {
+      recommended_font: dyslexiaFont ? "OpenDyslexic" : "Inter",
+      contrast_preference: grayscale ? "grayscale" : "default",
+      content_density:
+        fontSize === 18
+          ? "chunked"
+          : fontSize === 14
+            ? "compact"
+            : "comfortable",
+      features: {
+        bionic_reading: false,
+        image_hiding: hideImages,
+        tts_enabled: false,
+        reduce_motion: false,
+      },
+    };
+    chrome.storage.local.set({ userProfile: profile });
+  }, [fontSize, hideImages, dyslexiaFont, grayscale]);
+
   const openReaderMode = async (mode: string) => {
     const [tab] = await chrome.tabs.query({
       active: true,
