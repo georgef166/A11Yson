@@ -1,220 +1,219 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation"; // Import router
-import Header from "@/components/Header";    // Keep the header visible behind/above
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import A11yHeader from "@/components/A11yHeader";
 import { useAuth } from "@/context/AuthContext";
+
+interface Option {
+  id: string;
+  label: string;
+  boldPart?: string;
+  suffix?: string;
+}
 
 interface Question {
   id: number;
   text: string;
-  type: "scale" | "yesno" | "text";
+  subtitle?: string;
+  options: Option[];
   key: string;
 }
 
 const questions: Question[] = [
   {
     id: 1,
-    text: "When reading a long article, do you find lines of text tend to blur or swim together?",
-    type: "yesno",
-    key: "visual_confusion",
+    text: "When interacting with text and information on most websites, what tends to be your biggest challenge?",
+    subtitle: "(Check all that apply)*",
+    key: "reading_challenges",
+    options: [
+      { id: "hard_to_read", label: "Text feels ", boldPart: "hard to read or visually tiring", suffix: ", even when I adjust the size" },
+      { id: "lose_place", label: "I can read the text, but I ", boldPart: "lose my place or need to reread", suffix: " often." },
+      { id: "dense_pages", label: "Pages feel ", boldPart: "dense or overwhelming", suffix: ", making it hard to process information." },
+      { id: "comfortable", label: "I usually read and process content comfortably." },
+    ],
   },
   {
     id: 2,
-    text: "Do you often find yourself re-reading the same sentence multiple times because you lost focus?",
-    type: "scale", // 1-5
-    key: "attention_focus",
+    text: "How does the visual presentation of sites usually feel to you?",
+    subtitle: "(Check all that apply)*",
+    key: "visual_feel",
+    options: [
+      { id: "low_contrast", label: "Content blends together due to ", boldPart: "low contrast or colour choices" },
+      { id: "eye_strain", label: "Brightness, glare, or certain colours cause ", boldPart: "eye strain or discomfort" },
+      { id: "no_interference", label: "I notice visuals, but ", boldPart: "they don't interfere", suffix: " with my understanding" },
+      { id: "works_well", label: "The visual design usually works well for me" },
+    ],
   },
   {
     id: 3,
-    text: "Do bright white backgrounds on websites cause you eye strain or headaches?",
-    type: "yesno",
-    key: "light_sensitivity",
-  },
-  {
-    id: 4,
-    text: "How do you feel when a webpage has many moving elements (GIFs, auto-play videos)?",
-    type: "text", // Prompt for descriptive feeling
-    key: "sensory_overload",
+    text: "What most often interrupts your focus when using websites?",
+    subtitle: "(Check all that apply)*",
+    key: "focus_interruptions",
+    options: [
+      { id: "animations", label: "Animations, movements, or changing elements" },
+      { id: "too_much_info", label: "Too much information competing for my attention at once" },
+      { id: "visual_intensity", label: "Visual intensity (brightness, flashing, busy layouts)" },
+      { id: "stay_focused", label: "I usually stay focused without difficulty" },
+    ],
   },
 ];
 
 export default function QuizPage() {
-  const router = useRouter(); // Initialize router
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, any>>({});
+  const router = useRouter();
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
+  const [answers, setAnswers] = useState<Record<string, string[]>>({});
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const { user, loading: authLoading } = useAuth();
 
-  // AUTH PROTECTION: Redirect to home if not logged in
   useEffect(() => {
     if (!authLoading && !user) {
       router.push("/");
     }
   }, [user, authLoading, router]);
 
-  const currentQuestion = questions[currentQuestionIndex];
+  const currentQuestion = questions[currentIndex];
 
-  const handleAnswer = (answer: any) => {
-    setAnswers((prev) => ({ ...prev, [currentQuestion.key]: answer }));
-    if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex((prev) => prev + 1);
+  const toggleOption = (optionId: string) => {
+    setSelectedOptions((prev) =>
+      prev.includes(optionId)
+        ? prev.filter((id) => id !== optionId)
+        : [...prev, optionId]
+    );
+  };
+
+  const handleNext = () => {
+    if (selectedOptions.length === 0) return;
+
+    const newAnswers = { ...answers, [currentQuestion.key]: selectedOptions };
+    setAnswers(newAnswers);
+
+    if (currentIndex < questions.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+      setSelectedOptions([]);
     } else {
-      submitQuiz({ ...answers, [currentQuestion.key]: answer });
+      submitQuiz(newAnswers);
     }
   };
 
   const submitQuiz = async (finalAnswers: any) => {
     setIsAnalyzing(true);
     try {
-      const response = await fetch("http://localhost:8000/api/analyze-profile", {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const response = await fetch(`${apiUrl}/api/analyze-profile`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(finalAnswers),
       });
       const data = await response.json();
-
-      // Save Result Globally
       localStorage.setItem("a11yson_profile", JSON.stringify(data));
-
-      // Send message in case extension is listening (optional, but good for immediate update)
       window.postMessage({ type: "A11YSON_PROFILE_UPDATE", profile: data }, "*");
-
-      // Redirect to Profile Dashboard
       router.push("/profile");
-
     } catch (error) {
       console.error("Analysis failed:", error);
-    } finally {
       setIsAnalyzing(false);
     }
   };
 
-  const playQuestionAudio = async (text: string) => {
-    try {
-      const res = await fetch("http://localhost:8000/api/tts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
-      });
-      const blob = await res.blob();
-      const audio = new Audio(URL.createObjectURL(blob));
-      audio.play();
-    } catch (e) {
-      console.error("TTS failed", e);
-      const u = new SpeechSynthesisUtterance(text);
-      window.speechSynthesis.speak(u);
-    }
-  };
+  if (isAnalyzing) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#F1F7F2]">
+        <div className="flex flex-col items-center gap-4 text-center px-6">
+          <div className="w-12 h-12 border-4 border-[#2F7625] border-t-transparent rounded-full animate-spin mb-4"></div>
+          <h2 className="text-2xl font-bold text-[#2F7625]">Analyzing your results...</h2>
+          <p className="text-slate-500 max-w-sm text-sm">Generating your personalized neuro-accessibility profile.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans relative">
-      <Header />
+    <div className="min-h-screen bg-[#F1F7F2] text-slate-900 font-sans flex flex-col">
+      <A11yHeader />
 
-      {/* Dimmed Backdrop Context */}
-      <div className="absolute inset-0 z-0 bg-[url('/grid-pattern.svg')] opacity-5"></div>
+      <main className="flex-grow flex flex-col items-center pt-6 pb-10 px-4">
 
-      {/* Main Content Centered Modal */}
-      <main className="flex min-h-[calc(100vh-80px)] items-center justify-center p-4 relative z-10 backdrop-blur-sm bg-block/5">
-
-        <div className="w-full max-w-xl">
-          {/* Progress Bar */}
-          <div className="w-full bg-slate-200 h-2 rounded-full mb-8 dark:bg-slate-800">
+        {/* Progress Decoration */}
+        <div className="w-full max-w-2xl relative mb-10 mt-6 px-4">
+          <div className="w-full h-5 bg-white rounded-full shadow-sm border border-white/50 relative overflow-hidden">
+            {/* Green Progress Fill */}
             <div
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${((currentQuestionIndex) / questions.length) * 100}%` }}
+              className="absolute left-0 top-0 h-full bg-[#2F7625] transition-all duration-700 ease-out rounded-full"
+              style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
             />
           </div>
 
-          {isAnalyzing ? (
-            <div className="text-center animate-pulse py-12 bg-white dark:bg-black/80 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800">
-              <h2 className="text-3xl font-bold mb-4">Calibrating your experience...</h2>
-              <div className="flex justify-center mb-4">
-                <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-              </div>
-              <p className="text-slate-500">A11Yson is analyzing your cognitive needs via Gemini.</p>
+          {/* Growing Vine Container */}
+          <div
+            className="absolute -top-16 left-4 right-4 pointer-events-none transition-all duration-1000 ease-out overflow-hidden h-32 flex items-center"
+            style={{
+              width: `calc(${((currentIndex + 1) / questions.length) * 100}% - 32px)`,
+            }}
+          >
+            <div className="flex shrink-0 items-center h-full">
+              <Image src="/vine.png" alt="Vine" width={250} height={150} className="object-contain shrink-0" />
+              <Image src="/vine.png" alt="Vine" width={250} height={150} className="object-contain shrink-0 -ml-16 rotate-6" />
+              <Image src="/vine.png" alt="Vine" width={250} height={150} className="object-contain shrink-0 -ml-16 -rotate-3" />
             </div>
-          ) : (
-            <div className="bg-white/95 dark:bg-black/95 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in-95 duration-300">
-              <div className="flex justify-between items-start mb-6">
-                <span className="text-xs font-bold text-blue-600 tracking-wider uppercase bg-blue-50 dark:bg-blue-900/30 px-3 py-1 rounded-full">Question {currentQuestion.id} of {questions.length}</span>
-                <button
-                  onClick={() => playQuestionAudio(currentQuestion.text)}
-                  className="text-slate-400 hover:text-blue-500 transition-colors p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full"
-                  title="Listen to question"
-                >
-                  🔊
-                </button>
-              </div>
+          </div>
+        </div>
 
-              <h2 className="text-2xl md:text-3xl font-bold mb-8 leading-snug text-slate-900 dark:text-white">{currentQuestion.text}</h2>
-
-              <div className="space-y-4">
-                {currentQuestion.type === "yesno" && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <button
-                      onClick={() => handleAnswer("yes")}
-                      className="py-4 px-6 rounded-xl border-2 border-slate-200 hover:border-blue-500 hover:bg-blue-50 dark:border-slate-800 dark:hover:border-blue-500 dark:hover:bg-blue-900/20 transition-all font-bold text-lg"
-                    >
-                      Yes
-                    </button>
-                    <button
-                      onClick={() => handleAnswer("no")}
-                      className="py-4 px-6 rounded-xl border-2 border-slate-200 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-800 dark:hover:border-slate-600 dark:hover:bg-slate-800 transition-all font-bold text-lg"
-                    >
-                      No
-                    </button>
-                  </div>
-                )}
-
-                {currentQuestion.type === "scale" && (
-                  <div className="grid grid-cols-5 gap-2">
-                    {[1, 2, 3, 4, 5].map(num => (
-                      <button
-                        key={num}
-                        onClick={() => handleAnswer(num)}
-                        className="aspect-square rounded-xl border-2 border-slate-200 hover:border-blue-500 hover:bg-blue-50 dark:border-slate-800 dark:hover:border-blue-500 font-bold text-xl transition-all"
-                      >
-                        {num}
-                      </button>
-                    ))}
-                    <div className="col-span-5 flex justify-between text-xs text-slate-500 font-semibold mt-2 uppercase tracking-wide">
-                      <span>Never</span>
-                      <span>Always</span>
-                    </div>
-                  </div>
-                )}
-
-                {currentQuestion.type === "text" && (
-                  <div>
-                    <textarea
-                      className="w-full p-4 rounded-xl border-2 border-slate-200 dark:border-slate-800 bg-transparent focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none min-h-[140px] text-lg transition-all placeholder:text-slate-400"
-                      placeholder="Type your answer here..."
-                      autoFocus
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handleAnswer(e.currentTarget.value);
-                        }
-                      }}
-                    />
-                    <div className="flex justify-between items-center mt-3">
-                      <span className="text-xs text-slate-400">Shift + Enter for new line</span>
-                      <button
-                        onClick={(e) => {
-                          const val = (e.currentTarget.parentElement?.previousElementSibling as HTMLTextAreaElement).value;
-                          handleAnswer(val);
-                        }}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-full font-bold text-sm transition-colors"
-                      >
-                        Next
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+        {/* Question Card */}
+        <div className="w-full max-w-2xl bg-white rounded-[32px] shadow-[0_12px_40px_rgba(0,0,0,0.03)] border border-white/50 p-8 md:p-10 relative animate-in fade-in slide-in-from-bottom-3 duration-500">
+          <h2 className="text-2xl font-bold text-slate-800 leading-tight mb-2">
+            {currentQuestion.text}
+          </h2>
+          {currentQuestion.subtitle && (
+            <p className="text-lg text-slate-500 mb-8">{currentQuestion.subtitle}</p>
           )}
+
+          <div className="space-y-3">
+            {currentQuestion.options.map((option) => (
+              <button
+                key={option.id}
+                onClick={() => toggleOption(option.id)}
+                className={`w-full text-left p-4 md:p-5 rounded-2xl border-2 transition-all flex items-center gap-4 group shadow-sm ${selectedOptions.includes(option.id)
+                  ? "bg-[#F1F7F2] border-[#2F7625]/20"
+                  : "bg-[#F8FAF8] border-transparent hover:bg-[#F2F4F2]"
+                  }`}
+              >
+                <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${selectedOptions.includes(option.id)
+                  ? "bg-[#2F7625] border-[#2F7625]"
+                  : "bg-white border-slate-200"
+                  }`}>
+                  {selectedOptions.includes(option.id) && (
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </div>
+                <div className="text-base text-slate-700 leading-snug">
+                  {option.label}
+                  {option.boldPart && <span className="font-bold">{option.boldPart}</span>}
+                  {option.suffix}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer Navigation */}
+        <div className="w-full max-w-2xl mt-10 flex justify-between items-center px-4">
+          <div className="text-xl font-bold text-slate-400">
+            {currentQuestion.id}/{questions.length}
+          </div>
+          <button
+            onClick={handleNext}
+            disabled={selectedOptions.length === 0}
+            className={`px-12 py-4 rounded-2xl font-bold text-lg transition-all shadow-lg active:scale-[0.98] ${selectedOptions.length > 0
+              ? "bg-[#2F7625] text-white hover:bg-[#206015]"
+              : "bg-slate-300 text-slate-500 cursor-not-allowed"
+              }`}
+          >
+            {currentIndex === questions.length - 1 ? "Finish" : "Continue"}
+          </button>
         </div>
       </main>
     </div>

@@ -2,9 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+body {
+  margin: 0;
+  line-height: normal;
+}
+
 /* Scoped Overrides for Overlay */
 #a11yson-root {
   /* Prevent inheritance */
-  all: initial; 
+  all: initial;
   font-family: sans-serif;
 }

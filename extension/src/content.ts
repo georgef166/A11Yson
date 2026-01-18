@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import Overlay from "./Overlay";
 import styles from "./index.css?inline";
 import { initImageBlocker } from "./features/imageBlocker";
+import { API_BASE_URL } from "./config";
 
 console.log("A11Yson Content Script Loaded");
 
@@ -190,7 +191,7 @@ chrome.runtime.onMessage.addListener((request, _sender, _sendResponse) => {
     iframe.setAttribute("allow", "microphone");
 
     // Just pass the agentId in URL, data comes via postMessage
-    iframe.src = `http://localhost:8000/voice-widget?agentId=${agentId}`;
+    iframe.src = `${API_BASE_URL}/voice-widget?agentId=${agentId}`;
 
     Object.assign(iframe.style, {
       position: "fixed",

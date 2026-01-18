@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import "./App.css";
+import Vector from "./components/Vector";
+import { API_BASE_URL } from "./config";
 
 function App() {
   const [isActive, setIsActive] = useState(false);
@@ -61,7 +63,7 @@ function App() {
         const modeMap: any = {
           ADHD: "focus",
           Dyslexia: "dyslexia",
-          Anxiety: "sensory",
+          Sensory: "sensory",
           Clean: "clean",
         };
         const mappedMode = modeMap[p.primary_condition];
@@ -182,7 +184,7 @@ function App() {
 
       // 2. Get Summary from Backend
       console.log("A11Yson: Fetching summary from backend...");
-      const sumRes = await fetch("http://localhost:8000/api/summarize", {
+      const sumRes = await fetch(`${API_BASE_URL}/api/summarize`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text }),
@@ -260,12 +262,15 @@ Tip: Make sure you are not on a 'chrome://' page and that you have refreshed the
   return (
     <div className="w-full min-h-screen bg-slate-50 text-slate-900 font-sans">
       <header className="flex items-center justify-between p-4 bg-white border-b border-slate-200">
-        <h1 className="text-xl font-bold text-blue-600 tracking-tight">
-          A11Yson{" "}
-          <span className="text-xs text-slate-400 font-normal ml-1">
-            Assistant
-          </span>
-        </h1>
+        <div className="flex items-center gap-3">
+          <Vector />
+          <h1 className="text-xl font-bold text-[#206015] tracking-tight">
+            A11Yson{" "}
+            <span className="text-xs text-slate-400 font-normal ml-1">
+              Assistant
+            </span>
+          </h1>
+        </div>
         <div
           className={`w-2 h-2 rounded-full ${isActive || isCallActive ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" : "bg-slate-300"}`}
         />
@@ -295,7 +300,7 @@ Tip: Make sure you are not on a 'chrome://' page and that you have refreshed the
                   max="32"
                   value={fontSize}
                   onChange={(e) => setFontSize(Number(e.target.value))}
-                  className="flex-1 h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                  className="flex-1 h-2 bg-[#F1F7F2] rounded-lg appearance-none cursor-pointer accent-[#2F7625]"
                 />
                 <span className="text-lg text-slate-700">A</span>
               </div>
@@ -309,7 +314,7 @@ Tip: Make sure you are not on a 'chrome://' page and that you have refreshed the
               <select
                 value={fontFamily}
                 onChange={(e) => setFontFamily(e.target.value)}
-                className="w-full p-2 rounded-lg border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="w-full p-2 rounded-lg border border-slate-200 bg-[#F1F7F2] text-sm focus:outline-none focus:ring-2 focus:ring-[#2F7625] focus:border-transparent transition-all"
               >
                 <option value="Default">Default Site Font</option>
                 <option value="Calibri">Calibri</option>
@@ -326,7 +331,7 @@ Tip: Make sure you are not on a 'chrome://' page and that you have refreshed the
               </span>
               <button
                 onClick={() => setHideImages(!hideImages)}
-                className={`w-11 h-6 rounded-full transition-colors relative ${hideImages ? "bg-blue-600" : "bg-slate-200"}`}
+                className={`w-11 h-6 rounded-full transition-colors relative ${hideImages ? "bg-[#2F7625]" : "bg-slate-200"}`}
               >
                 <div
                   className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-transform ${hideImages ? "left-6" : "left-1"}`}
@@ -340,7 +345,7 @@ Tip: Make sure you are not on a 'chrome://' page and that you have refreshed the
               </span>
               <button
                 onClick={() => setGrayscale(!grayscale)}
-                className={`w-11 h-6 rounded-full transition-colors relative ${grayscale ? "bg-slate-600" : "bg-slate-200"}`}
+                className={`w-11 h-6 rounded-full transition-colors relative ${grayscale ? "bg-[#333]" : "bg-slate-200"}`}
               >
                 <div
                   className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-transform ${grayscale ? "left-6" : "left-1"}`}
@@ -354,7 +359,7 @@ Tip: Make sure you are not on a 'chrome://' page and that you have refreshed the
         <div className="space-y-3">
           {isActive && (
             <div className="flex justify-end pr-1">
-              <span className="text-xs text-green-600 font-bold bg-green-100 px-2 py-0.5 rounded-full">
+              <span className="text-xs text-[#2F7625] font-bold bg-[#F1F7F2] px-2 py-0.5 rounded-full">
                 Active
               </span>
             </div>
@@ -363,7 +368,7 @@ Tip: Make sure you are not on a 'chrome://' page and that you have refreshed the
           <div className="grid grid-cols-2 gap-3">
             <button
               onClick={() => openReaderMode("focus")}
-              className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all text-center gap-2 group shadow-sm hover:shadow-md ${activeMode === "focus" ? "border-blue-500 bg-blue-50" : "border-slate-200 bg-white"}`}
+              className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all text-center gap-2 group shadow-sm hover:shadow-md ${activeMode === "focus" ? "border-[#2F7625] bg-[#F1F7F2]" : "border-slate-200 bg-white"}`}
             >
               <span className="text-2xl group-hover:scale-110 transition-transform">
                 🧘
@@ -374,7 +379,7 @@ Tip: Make sure you are not on a 'chrome://' page and that you have refreshed the
             </button>
             <button
               onClick={() => openReaderMode("dyslexia")}
-              className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all text-center gap-2 group shadow-sm hover:shadow-md ${activeMode === "dyslexia" ? "border-yellow-500 bg-yellow-50" : "border-slate-200 bg-white"}`}
+              className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all text-center gap-2 group shadow-sm hover:shadow-md ${activeMode === "dyslexia" ? "border-amber-500 bg-amber-50" : "border-slate-200 bg-white"}`}
             >
               <span className="text-2xl group-hover:scale-110 transition-transform">
                 📖
@@ -396,7 +401,7 @@ Tip: Make sure you are not on a 'chrome://' page and that you have refreshed the
             </button>
             <button
               onClick={() => openReaderMode("clean")}
-              className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all text-center gap-2 group shadow-sm hover:shadow-md ${activeMode === "clean" ? "border-gray-500 bg-gray-50" : "border-slate-200 bg-white"}`}
+              className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all text-center gap-2 group shadow-sm hover:shadow-md ${activeMode === "clean" ? "border-slate-400 bg-slate-50" : "border-slate-200 bg-white"}`}
             >
               <span className="text-2xl group-hover:scale-110 transition-transform">
                 ✨
@@ -428,7 +433,7 @@ Tip: Make sure you are not on a 'chrome://' page and that you have refreshed the
             <button
               onClick={summarizeAndCall}
               disabled={isSummarizing}
-              className={`flex-1 py-4 rounded-xl flex flex-col items-center justify-center gap-1 font-bold text-white transition-all shadow-md active:scale-95 ${isSummarizing ? 'bg-slate-400 cursor-not-allowed' : 'bg-gradient-to-br from-blue-600 to-indigo-600 hover:brightness-110'}`}
+              className={`flex-1 py-4 rounded-xl flex flex-col items-center justify-center gap-1 font-bold text-white transition-all shadow-md active:scale-95 ${isSummarizing ? 'bg-slate-400 cursor-not-allowed' : 'bg-gradient-to-br from-[#2F7625] to-[#206015] hover:brightness-110'}`}
             >
               {isSummarizing ? (
                 <>
@@ -446,7 +451,7 @@ Tip: Make sure you are not on a 'chrome://' page and that you have refreshed the
             <button
               onClick={startDirectCall}
               disabled={isDirectCalling}
-              className="flex-1 py-4 rounded-xl flex flex-col items-center justify-center gap-1 font-bold text-white transition-all shadow-md active:scale-95 bg-gradient-to-br from-green-600 to-teal-600 hover:brightness-110 disabled:bg-slate-400"
+              className="flex-1 py-4 rounded-xl flex flex-col items-center justify-center gap-1 font-bold text-white transition-all shadow-md active:scale-95 bg-gradient-to-br from-[#333] to-[#111] hover:brightness-110 disabled:bg-slate-400"
             >
               {isDirectCalling ? (
                 <>
@@ -476,7 +481,7 @@ Tip: Make sure you are not on a 'chrome://' page and that you have refreshed the
                 chrome.storage.local.remove(["userProfile", "popupSettings", "isCallActive"]);
                 closeReader();
               }}
-              className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 border border-slate-200 transition-colors"
+              className="w-full py-2 bg-[#F1F7F2] hover:bg-slate-100 text-[#2F7625] font-bold rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 border border-[#2F7625]/20 transition-colors"
             >
               <span>↺</span> Reset All Changes
             </button>

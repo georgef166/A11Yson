@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import Header from "@/components/Header";
+import Image from "next/image";
+import A11yHeader from "@/components/A11yHeader";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/context/AuthContext";
 
@@ -11,63 +12,138 @@ import { useAuth } from "@/context/AuthContext";
 const PRESETS: Record<string, any> = {
   "ADHD": {
     recommended_font: "Inter",
+    text_size: "Large",
     contrast_preference: "grayscale",
     content_density: "chunked",
-    features: { bionic_reading: true, image_hiding: false, tts_enabled: true, reduce_motion: false }
+    features: {
+      bionic_reading: true,
+      image_hiding: false,
+      blur_photos: true,
+      block_ads: true,
+      tts_enabled: true,
+      live_assistant: true,
+      reduce_motion: false
+    }
   },
   "Dyslexia": {
     recommended_font: "Helvetica",
+    text_size: "Large",
     contrast_preference: "soft-yellow",
     content_density: "comfortable",
-    features: { bionic_reading: false, image_hiding: false, tts_enabled: true, reduce_motion: false }
+    features: {
+      bionic_reading: false,
+      image_hiding: false,
+      blur_photos: false,
+      block_ads: false,
+      tts_enabled: true,
+      live_assistant: true,
+      reduce_motion: false
+    }
   },
   "Sensory": {
     recommended_font: "Inter",
+    text_size: "Regular",
     contrast_preference: "grayscale",
     content_density: "comfortable",
-    features: { bionic_reading: false, image_hiding: true, tts_enabled: false, reduce_motion: true }
+    features: {
+      bionic_reading: false,
+      image_hiding: true,
+      blur_photos: true,
+      block_ads: true,
+      tts_enabled: false,
+      live_assistant: false,
+      reduce_motion: true
+    }
   },
   "Clean": {
     recommended_font: "Inter",
+    text_size: "Regular",
     contrast_preference: "default",
     content_density: "comfortable",
-    features: { bionic_reading: false, image_hiding: false, tts_enabled: false, reduce_motion: false }
+    features: {
+      bionic_reading: false,
+      image_hiding: false,
+      blur_photos: false,
+      block_ads: true,
+      tts_enabled: false,
+      live_assistant: false,
+      reduce_motion: false
+    }
+  },
+  "Custom": {
+    recommended_font: "Inter",
+    text_size: "Regular",
+    contrast_preference: "default",
+    content_density: "comfortable",
+    features: {
+      bionic_reading: false,
+      image_hiding: false,
+      blur_photos: false,
+      block_ads: false,
+      tts_enabled: false,
+      live_assistant: false,
+      reduce_motion: false
+    }
   }
 };
 
 export default function ProfilePage() {
   const [profileState, setProfileState] = useState<any>(null);
-  const [originalProfile, setOriginalProfile] = useState<any>(null); // Store the initial AI result
+  const [originalProfile, setOriginalProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [activePreset, setActivePreset] = useState<string>("recommended"); // Track active selection
+  const [activePreset, setActivePreset] = useState<string>("Clean");
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
 
-  // AUTH PROTECTION: Redirect to home if not logged in
+  // AUTH PROTECTION
   useEffect(() => {
     if (!authLoading && !user) {
       router.push("/");
     }
   }, [user, authLoading, router]);
 
-  // Initialize editable state from LocalStorage on mount
+  // Initialize from LocalStorage
   useEffect(() => {
     const saved = localStorage.getItem("a11yson_profile");
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
+        // Ensure all new feature keys exist
+        if (!parsed.features) parsed.features = {};
+        parsed.features = {
+          image_hiding: false,
+          blur_photos: false,
+          block_ads: false,
+          tts_enabled: false,
+          live_assistant: false,
+          ...parsed.features
+        };
         setProfileState(parsed);
         setOriginalProfile(parsed);
-        setActivePreset("recommended");
+
+        const condition = parsed.primary_condition;
+        if (PRESETS[condition]) {
+          setActivePreset(condition);
+        } else {
+          setActivePreset("Clean");
+        }
       } catch (e) { console.error(e); }
     } else {
-      // Default Fallback
       const fallback = {
         primary_condition: "Clean",
         recommended_font: "Inter",
+        text_size: "Regular",
         contrast_preference: "default",
         content_density: "comfortable",
-        features: { bionic_reading: false, image_hiding: false, tts_enabled: false, reduce_motion: false },
+        features: {
+          bionic_reading: false,
+          image_hiding: false,
+          blur_photos: false,
+          block_ads: false,
+          tts_enabled: false,
+          live_assistant: false,
+          reduce_motion: false
+        },
         explanation: "Standard clean profile."
       };
       setProfileState(fallback);
@@ -77,20 +153,14 @@ export default function ProfilePage() {
     setLoading(false);
   }, []);
 
-  const applyRecommended = () => {
-    if (!originalProfile) return;
-    setProfileState({ ...originalProfile });
-    setActivePreset("recommended");
-  };
-
   const applyPreset = (presetName: string) => {
     if (!profileState) return;
     const preset = PRESETS[presetName];
     setProfileState({
-      ...profileState, // Keep explanation if we want? Or overwrite? 
-      // Actually, standard behavior is to replace settings.
+      ...profileState,
       primary_condition: presetName,
       recommended_font: preset.recommended_font,
+      text_size: preset.text_size || "Regular",
       contrast_preference: preset.contrast_preference,
       content_density: preset.content_density,
       features: { ...preset.features }
@@ -102,255 +172,228 @@ export default function ProfilePage() {
     if (!profileState) return;
     setProfileState({
       ...profileState,
+      primary_condition: "Custom", // Any manual change makes it Custom
       features: {
         ...profileState.features,
         [key]: !profileState.features[key]
       }
     });
-    // If user toggles manually, they are technically in "custom" mode, 
-    // but we can leave the active highlight on the last selected preset or plain.
-    // For now, let's keep it simple.
+    setActivePreset("Custom");
+  };
+
+  const updateSetting = (key: string, value: string) => {
+    setProfileState({
+      ...profileState,
+      primary_condition: "Custom",
+      [key]: value
+    });
+    setActivePreset("Custom");
   };
 
   if (loading) return (
-    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50 font-sans">
-      <Header />
+    <div className="flex min-h-screen flex-col bg-[#F1F7F2] text-slate-900 font-sans">
+      <A11yHeader />
       <main className="flex-grow flex items-center justify-center">
-        Loading Profile...
+        <div className="w-12 h-12 border-4 border-[#2F7625] border-t-transparent rounded-full animate-spin"></div>
       </main>
       <Footer />
     </div>
   );
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50 font-sans selection:bg-blue-200 dark:selection:bg-blue-900">
+    <div className="flex min-h-screen flex-col bg-[#F1F7F2] text-slate-900 font-sans selection:bg-[#2F7625]/20">
+      <A11yHeader />
 
-      <Header />
+      <main className="flex-grow max-w-[1200px] mx-auto w-full px-4 py-8 md:px-6 flex flex-col md:flex-row gap-8">
 
-      <main className="flex-grow flex flex-col items-center justify-center p-4 md:p-8">
-
-        <div className="w-full max-w-5xl animate-fade-in-up bg-white dark:bg-zinc-900 rounded-3xl shadow-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 flex flex-col md:flex-row h-auto md:h-[600px]">
-
-          {/* LEFT SIDEBAR - PRESETS */}
-          <div className="w-full md:w-1/3 bg-zinc-100 dark:bg-zinc-950 p-6 md:p-8 border-b md:border-b-0 md:border-r border-zinc-200 dark:border-zinc-800 flex flex-col">
+        {/* SIDEBAR - PRESETS CARD */}
+        <aside className="w-full md:w-[280px] shrink-0">
+          <div className="bg-white rounded-3xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] p-8 border border-white/50 h-full">
             <div className="mb-8">
-              <h2 className="text-xl font-bold mb-1">Welcome, {user?.displayName?.split(" ")[0] || "Friend"}</h2>
-              <p className="text-xs text-zinc-500 uppercase tracking-widest font-semibold">Select a Preset</p>
+              <h2 className="text-xl font-bold text-slate-800">Welcome, {user?.displayName?.split(" ")[0] || "User"}</h2>
+              <p className="text-sm text-slate-400 font-medium mt-1">Select a preset</p>
             </div>
 
-            <div className="space-y-3 flex-1 overflow-y-auto">
-
-              {/* RECOMMENDED BUTTON */}
-              <button
-                onClick={applyRecommended}
-                className={`w-full text-left px-5 py-4 rounded-xl transition-all flex items-center justify-between group border-2 ${activePreset === "recommended"
-                  ? 'bg-indigo-600 text-white shadow-md border-indigo-600'
-                  : 'bg-white dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-indigo-100 dark:border-indigo-900/30'
-                  }`}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="font-bold text-lg">Recommended</span>
-                </div>
-                {activePreset === "recommended" && (
-                  <span className="bg-white/20 p-1 rounded-full"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg></span>
-                )}
-              </button>
-
-              <div className="h-px bg-zinc-200 dark:bg-zinc-800 my-2" />
-
-              {Object.keys(PRESETS).map(name => (
+            <nav className="flex flex-col gap-3">
+              {["ADHD", "Dyslexia", "Sensory", "Clean", "Custom"].map((name) => (
                 <button
                   key={name}
                   onClick={() => applyPreset(name)}
-                  className={`w-full text-left px-5 py-4 rounded-xl transition-all flex items-center justify-between group ${activePreset === name
-                    ? 'bg-blue-600 text-white shadow-md'
-                    : 'bg-white dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300'
+                  className={`w-full text-left px-5 py-3.5 rounded-2xl transition-all flex items-center justify-between font-bold text-base group ${activePreset === name
+                    ? "bg-[#2F7625] text-white shadow-md border border-[#2F7625]"
+                    : "bg-[#F8FAF8] text-slate-600 hover:bg-[#F2F4F2] border border-transparent"
                     }`}
                 >
-                  <span className="font-bold text-lg">{name}</span>
+                  <span>{name}</span>
                   {activePreset === name && (
-                    <span className="bg-white/20 p-1 rounded-full"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg></span>
+                    <div className="bg-white/20 rounded-full p-1">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
                   )}
                 </button>
               ))}
-            </div>
+            </nav>
+          </div>
+        </aside>
 
-            <div className="mt-8 pt-6 border-t border-zinc-200 dark:border-zinc-800">
-              <p className="text-xs text-zinc-400">Selecting a preset adjusts all settings on the right instantly.</p>
-            </div>
+        {/* MAIN CONTENT AREA */}
+        <section className="flex-grow">
+          <div className="mb-6">
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Webpage Customization</h1>
+            <p className="text-sm text-slate-500 font-medium mt-0.5">Select the specific options that suit your needs best</p>
           </div>
 
-          {/* RIGHT PANEL - TOGGLES */}
-          <div className="flex-1 p-6 md:p-8 overflow-y-auto">
+          <div className="bg-white rounded-3xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] p-8 border border-white/50 relative overflow-hidden">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-8">
 
-            {/* AI RECOMMENDATION SECTION */}
+              {/* COLUMN 1: COLOUR & TYPOGRAPHY */}
+              <div className="space-y-8">
+                <div>
+                  <h3 className="text-lg font-black mb-6 text-slate-800">Colour & Typography</h3>
+                  <div className="space-y-4">
+                    {/* Font Selection */}
+                    <SettingBox label="Font">
+                      <select
+                        value={profileState.recommended_font}
+                        onChange={(e) => updateSetting('recommended_font', e.target.value)}
+                        className="bg-transparent border-none outline-none font-bold text-slate-600 text-sm cursor-pointer pr-2"
+                      >
+                        <option value="Inter">Inter</option>
+                        <option value="Helvetica">Helvetica</option>
+                        <option value="Arial">Arial</option>
+                        <option value="Verdana">Verdana</option>
+                        <option value="OpenDyslexic">OpenDyslexic</option>
+                      </select>
+                    </SettingBox>
+
+                    {/* Text Size */}
+                    <SettingBox label="Text size">
+                      <select
+                        value={profileState.text_size || "Regular"}
+                        onChange={(e) => updateSetting('text_size', e.target.value)}
+                        className="bg-transparent border-none outline-none font-bold text-slate-600 text-sm cursor-pointer pr-2"
+                      >
+                        <option value="Small">Small</option>
+                        <option value="Regular">Regular</option>
+                        <option value="Large">Large</option>
+                        <option value="Extra Large">Extra Large</option>
+                      </select>
+                    </SettingBox>
+
+                    {/* Grayscale Mode */}
+                    <ToggleSetting
+                      label="Grayscale"
+                      active={profileState.contrast_preference === "grayscale"}
+                      onToggle={() => updateSetting('contrast_preference', profileState.contrast_preference === "grayscale" ? "default" : "grayscale")}
+                    />
+                  </div>
+                </div>
+
+                {/* A11Yson Settings */}
+                <div>
+                  <h3 className="text-lg font-black mb-6 text-slate-800">A11Yson Settings</h3>
+                  <div className="space-y-4">
+                    <ToggleSetting
+                      label="Text-to-speech"
+                      active={profileState.features.tts_enabled}
+                      onToggle={() => toggleFeature('tts_enabled')}
+                    />
+                    <ToggleSetting
+                      label="Live Assistant"
+                      active={profileState.features.live_assistant}
+                      onToggle={() => toggleFeature('live_assistant')}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* COLUMN 2: MEDIA & SYNC */}
+              <div className="flex flex-col">
+                <div className="flex-grow">
+                  <h3 className="text-lg font-black mb-6 text-slate-800">Media</h3>
+                  <div className="space-y-4">
+                    <ToggleSetting
+                      label="Hide photos entirely"
+                      active={profileState.features.image_hiding}
+                      onToggle={() => toggleFeature('image_hiding')}
+                    />
+                    <ToggleSetting
+                      label="Blur photos"
+                      active={profileState.features.blur_photos}
+                      onToggle={() => toggleFeature('blur_photos')}
+                    />
+                    <ToggleSetting
+                      label="Block ads"
+                      active={profileState.features.block_ads}
+                      onToggle={() => toggleFeature('block_ads')}
+                    />
+                  </div>
+                </div>
+
+                {/* SYNC BUTTON */}
+                <div className="mt-8 flex justify-end">
+                  <button
+                    onClick={() => {
+                      const btn = document.getElementById('sync-btn');
+                      if (btn) btn.innerText = "Syncing...";
+                      window.postMessage({ type: "A11YSON_PROFILE_UPDATE", profile: profileState }, "*");
+                      localStorage.setItem("a11yson_profile", JSON.stringify(profileState));
+                      setTimeout(() => {
+                        if (btn) btn.innerText = "Synced! ✅";
+                        setTimeout(() => { if (btn) btn.innerText = "Sync Changes to Extension"; }, 2000);
+                      }, 800);
+                    }}
+                    id="sync-btn"
+                    className="w-full bg-[#2F7625] text-white py-4 px-6 rounded-2xl font-black text-lg hover:bg-[#206015] transition-all shadow-lg active:scale-[0.98]"
+                  >
+                    Sync Changes to Extension
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+            {/* AI Explanation */}
             {profileState.explanation && (
-              <div className="mb-8 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl border border-blue-100 dark:border-blue-800 relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-10">
-                  <span className="text-6xl">🤖</span>
+              <div className="mt-10 p-6 bg-[#F8FAF8] rounded-2xl border border-[#2F7625]/5 italic text-sm text-slate-500 font-medium">
+                <div className="flex items-center gap-2 mb-2 not-italic">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-[#2F7625]">AI Rationale</span>
                 </div>
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-xl">✨</span>
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-blue-700 dark:text-blue-300">Recommended for You</h3>
-                </div>
-                <p className="text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
-                  {profileState.explanation}
-                </p>
+                "{profileState.explanation}"
               </div>
             )}
-
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-2xl font-bold">Custom Settings</h3>
-              <span className="px-3 py-1 bg-zinc-100 dark:bg-zinc-800 rounded-full text-xs font-mono text-zinc-500">{profileState.primary_condition} Mode</span>
-            </div>
-
-            {/* VISUAL SETTINGS */}
-            <div className="mb-8">
-              <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-4">Visual & Typography</h4>
-
-              <div className="space-y-4">
-                {/* Font Selection Dropdown */}
-                <div className="flex flex-col gap-3 p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-white dark:bg-zinc-800 rounded-lg flex items-center justify-center font-sans text-xl border border-zinc-200 dark:border-zinc-700 font-bold">Aa</div>
-                    <div>
-                      <div className="font-semibold">Reading Font</div>
-                      <div className="text-xs text-zinc-500">Choose a font for better readability</div>
-                    </div>
-                  </div>
-
-                  <select
-                    value={profileState.recommended_font}
-                    onChange={(e) => setProfileState({ ...profileState, recommended_font: e.target.value })}
-                    className="w-full p-3 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                  >
-                    <option value="Inter">Inter (Modern Default)</option>
-                    <option value="Calibri">Calibri</option>
-                    <option value="Helvetica">Helvetica</option>
-                    <option value="Arial">Arial</option>
-                    <option value="Verdana">Verdana</option>
-                    <option value="Times New Roman">Times New Roman</option>
-                  </select>
-                </div>
-
-                {/* Grayscale Mode */}
-                <div className="flex items-center justify-between p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-zinc-400 rounded-lg flex items-center justify-center text-white border border-zinc-200">🏁</div>
-                    <div>
-                      <div className="font-semibold">Grayscale Mode</div>
-                      <div className="text-xs text-zinc-500">Remove color distractions globally</div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setProfileState({ ...profileState, contrast_preference: profileState.contrast_preference === "grayscale" ? "default" : "grayscale" })}
-                    className={`w-14 h-8 rounded-full transition-colors relative ${profileState.contrast_preference === "grayscale" ? 'bg-slate-600' : 'bg-zinc-300'}`}
-                  >
-                    <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-transform ${profileState.contrast_preference === "grayscale" ? 'left-7' : 'left-1'}`} />
-                  </button>
-                </div>
-                {/* Hide Images */}
-                <div className="flex items-center justify-between p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-zinc-100 dark:bg-zinc-800 rounded-lg flex items-center justify-center text-xl">🖼️</div>
-                    <div>
-                      <div className="font-semibold">Hide Images</div>
-                      <div className="text-xs text-zinc-500">Remove visual distractions</div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => toggleFeature('image_hiding')}
-                    className={`w-14 h-8 rounded-full transition-colors relative ${profileState.features.image_hiding ? 'bg-blue-600' : 'bg-zinc-300'}`}
-                  >
-                    <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-transform ${profileState.features.image_hiding ? 'left-7' : 'left-1'}`} />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* COGNITIVE SETTINGS */}
-            <div className="mb-8">
-              <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-4">Cognitive Support</h4>
-              <div className="space-y-4">
-                {/* Bionic */}
-                <div className="flex items-center justify-between p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center font-bold">Bio</div>
-                    <div>
-                      <div className="font-semibold">Bionic Reading</div>
-                      <div className="text-xs text-zinc-500">Highlight initial letters of words</div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => toggleFeature('bionic_reading')}
-                    className={`w-14 h-8 rounded-full transition-colors relative ${profileState.features.bionic_reading ? 'bg-blue-600' : 'bg-zinc-300'}`}
-                  >
-                    <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-transform ${profileState.features.bionic_reading ? 'left-7' : 'left-1'}`} />
-                  </button>
-                </div>
-
-                {/* TTS */}
-                <div className="flex items-center justify-between p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center text-xl">🔊</div>
-                    <div>
-                      <div className="font-semibold">Text-to-Speech Enabled</div>
-                      <div className="text-xs text-zinc-500">Allow reading selected text aloud</div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => toggleFeature('tts_enabled')}
-                    className={`w-14 h-8 rounded-full transition-colors relative ${profileState.features.tts_enabled ? 'bg-blue-600' : 'bg-zinc-300'}`}
-                  >
-                    <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-transform ${profileState.features.tts_enabled ? 'left-7' : 'left-1'}`} />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-
           </div>
-        </div>
-
-        {/* Action Buttons - Separate Box Below */}
-        <div className="w-full max-w-5xl mt-6 flex gap-4">
-          <button
-            onClick={() => {
-              const btn = document.getElementById('sync-btn');
-              if (btn) btn.innerText = "Cruising... 🚀";
-
-              window.postMessage({ type: "A11YSON_PROFILE_UPDATE", profile: profileState }, "*");
-              localStorage.setItem("a11yson_profile", JSON.stringify(profileState));
-
-              setTimeout(() => {
-                if (btn) btn.innerText = "Synced! ✅";
-                setTimeout(() => { if (btn) btn.innerText = "Sync Changes to Extension"; }, 2000);
-              }, 1000);
-            }}
-            id="sync-btn"
-            className="flex-1 bg-zinc-900 dark:bg-white text-white dark:text-black py-4 rounded-xl font-bold text-lg hover:shadow-lg transition-all shadow-md"
-          >
-            Sync Changes to Extension
-          </button>
-
-          <button
-            onClick={() => {
-              navigator.clipboard.writeText("chrome://extensions");
-              alert("Browser security prevents opening this page directly.\n\nCopied 'chrome://extensions' to your clipboard! \n\nPlease open a new tab and paste it to manage your extensions.");
-            }}
-            className="px-6 py-4 rounded-xl bg-orange-500 text-white font-bold hover:bg-orange-600 transition-all text-center shadow-md flex items-center justify-center cursor-pointer"
-          >
-            Go to Chrome Store
-          </button>
-
-          <Link href="/" className="px-8 py-4 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 font-bold hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all text-center shadow-md">
-            Done
-          </Link>
-        </div>
+        </section>
       </main>
 
       <Footer />
+    </div>
+  );
+}
+
+function SettingBox({ label, children }: { label: string, children: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between p-4 bg-[#F8FAF8] rounded-2xl border border-white">
+      <span className="text-base font-black text-slate-800">{label}</span>
+      <div className="bg-white px-3 py-1.5 rounded-lg shadow-[0_1px_2px_rgba(0,0,0,0.05)] border border-slate-100 flex items-center">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function ToggleSetting({ label, active, onToggle }: { label: string, active: boolean, onToggle: () => void }) {
+  return (
+    <div className="flex items-center justify-between p-4 bg-[#F8FAF8] rounded-2xl border border-white">
+      <span className="text-base font-black text-slate-800">{label}</span>
+      <button
+        onClick={onToggle}
+        className={`w-12 h-6 rounded-full transition-all relative ${active ? 'bg-[#4ADE80]' : 'bg-[#E2E8F0]'}`}
+      >
+        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${active ? 'left-7' : 'left-1'}`} />
+      </button>
     </div>
   );
 }

@@ -53,9 +53,9 @@ async def analyze_profile(quiz_data: dict) -> dict:
         
         Return a JSON object with the following structure:
         {{
-            "primary_condition": "ADHD" | "Dyslexia" | "Anxiety" | "General",
+            "primary_condition": "ADHD" | "Dyslexia" | "Sensory" | "Clean",
             "recommended_font": "Calibri" | "Helvetica" | "Arial" | "Verdana" | "Times New Roman" | "Inter",
-            "contrast_preference": "high-contrast" | "soft-yellow" | "dark-mode" | "default",
+            "contrast_preference": "grayscale" | "soft-yellow" | "default",
             "content_density": "compact" | "comfortable" | "chunked",
             "features": {{
                 "bionic_reading": boolean,
@@ -63,7 +63,7 @@ async def analyze_profile(quiz_data: dict) -> dict:
                 "tts_enabled": boolean,
                 "reduce_motion": boolean
             }},
-            "voice_assistant_persona": "calm" | "energetic" | "slow-paced"
+            "explanation": "Brief context on why this was selected"
         }}
         Only return the JSON. Do not include markdown formatting.
         """
