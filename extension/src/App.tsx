@@ -24,20 +24,35 @@ function App() {
     checkStatus();
   }, []);
 
-  // Load Saved Profile
+  // Load Saved Profile & Sync across sessions
   useEffect(() => {
-    chrome.storage.local.get("userProfile", (result) => {
-      if (result.userProfile) {
-        const p = result.userProfile as any;
-        console.log("Loading Profile into Popup:", p);
-        if (p.recommended_font === "OpenDyslexic") setDyslexiaFont(true);
-        if (p.features?.image_hiding) setHideImages(true);
+    const loadProfile = (data?: any) => {
+      const p = data || {};
+      if (p.recommended_font === "OpenDyslexic") setDyslexiaFont(true);
+      else setDyslexiaFont(false);
 
-        // Intelligent Defaults based on keys
-        if (p.content_density === "chunked") setFontSize(18);
-        if (p.content_density === "compact") setFontSize(14);
-      }
+      if (p.features?.image_hiding) setHideImages(true);
+      else setHideImages(false);
+
+      if (p.content_density === "chunked") setFontSize(18);
+      else if (p.content_density === "compact") setFontSize(14);
+      else setFontSize(16);
+    };
+
+    // Initial Load
+    chrome.storage.local.get("userProfile", (result) => {
+      if (result.userProfile) loadProfile(result.userProfile);
     });
+
+    // Listen for Sync from Dashboard
+    const listener = (changes: any) => {
+      if (changes.userProfile) {
+        console.log("Real-time Profile Sync:", changes.userProfile.newValue);
+        loadProfile(changes.userProfile.newValue);
+      }
+    };
+    chrome.storage.onChanged.addListener(listener);
+    return () => chrome.storage.onChanged.removeListener(listener);
   }, []);
 
   // Send LIVE settings updates
@@ -174,6 +189,21 @@ function App() {
               <span className="text-sm font-bold text-slate-700 mt-1">Clean</span>
             </button>
           </div>
+
+          {(fontSize !== 16 || hideImages || dyslexiaFont || isActive) && (
+            <button
+              onClick={() => {
+                setFontSize(16);
+                setHideImages(false);
+                setDyslexiaFont(false);
+                chrome.storage.local.remove("userProfile");
+                if (isActive) closeReader();
+              }}
+              className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 border border-slate-200 transition-colors mt-3"
+            >
+              <span>↺</span> Reset All Changes
+            </button>
+          )}
 
           {isActive && (
             <button onClick={closeReader} className="w-full py-3 bg-red-50 text-red-600 font-bold rounded-xl hover:bg-red-100 transition-colors border border-red-100">
