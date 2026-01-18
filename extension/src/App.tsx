@@ -285,7 +285,7 @@ function App() {
                 🧘
               </span>
               <span className="text-sm font-bold text-slate-700 mt-1">
-                Focus
+                ADHD
               </span>
             </button>
             <button
