@@ -8,13 +8,18 @@
   },
   "content_scripts": [
     {
-      "js": ["src/content.ts"],
-      "matches": ["<all_urls>"]
+      "js": [
+        "src/content.ts"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
     }
   ],
   "permissions": [
     "activeTab",
-    "scripting"
+    "scripting",
+    "storage"
   ],
   "host_permissions": [
     "<all_urls>"
