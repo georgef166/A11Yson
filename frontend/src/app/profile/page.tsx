@@ -11,19 +11,19 @@ import { useAuth } from "@/context/AuthContext";
 const PRESETS: Record<string, any> = {
   "ADHD": {
     recommended_font: "Inter",
-    contrast_preference: "dark-mode",
+    contrast_preference: "grayscale",
     content_density: "chunked",
     features: { bionic_reading: true, image_hiding: false, tts_enabled: true, reduce_motion: false }
   },
   "Dyslexia": {
-    recommended_font: "OpenDyslexic",
+    recommended_font: "Helvetica",
     contrast_preference: "soft-yellow",
     content_density: "comfortable",
     features: { bionic_reading: false, image_hiding: false, tts_enabled: true, reduce_motion: false }
   },
   "Sensory": {
     recommended_font: "Inter",
-    contrast_preference: "dark-mode",
+    contrast_preference: "grayscale",
     content_density: "comfortable",
     features: { bionic_reading: false, image_hiding: true, tts_enabled: false, reduce_motion: true }
   },
@@ -212,34 +212,34 @@ export default function ProfilePage() {
                 {/* Font Toggle */}
                 <div className="flex items-center justify-between p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-white dark:bg-zinc-800 rounded-lg flex items-center justify-center font-serif text-xl border border-zinc-200 dark:border-zinc-700">Aa</div>
+                    <div className="w-10 h-10 bg-white dark:bg-zinc-800 rounded-lg flex items-center justify-center font-sans text-xl border border-zinc-200 dark:border-zinc-700 font-bold">He</div>
                     <div>
-                      <div className="font-semibold">Dyslexia Font</div>
-                      <div className="text-xs text-zinc-500">Use OpenDyslexic for better readability</div>
+                      <div className="font-semibold">Helvetica (Clean Font)</div>
+                      <div className="text-xs text-zinc-500">Cleaner reading on web pages</div>
                     </div>
                   </div>
                   <button
-                    onClick={() => setProfileState({ ...profileState, recommended_font: profileState.recommended_font === "OpenDyslexic" ? "Inter" : "OpenDyslexic" })}
-                    className={`w-14 h-8 rounded-full transition-colors relative ${profileState.recommended_font === "OpenDyslexic" ? 'bg-blue-600' : 'bg-zinc-300'}`}
+                    onClick={() => setProfileState({ ...profileState, recommended_font: profileState.recommended_font === "Helvetica" ? "Inter" : "Helvetica" })}
+                    className={`w-14 h-8 rounded-full transition-colors relative ${profileState.recommended_font === "Helvetica" ? 'bg-blue-600' : 'bg-zinc-300'}`}
                   >
-                    <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-transform ${profileState.recommended_font === "OpenDyslexic" ? 'left-7' : 'left-1'}`} />
+                    <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-transform ${profileState.recommended_font === "Helvetica" ? 'left-7' : 'left-1'}`} />
                   </button>
                 </div>
 
-                {/* Dark Mode */}
+                {/* Grayscale Mode */}
                 <div className="flex items-center justify-between p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-zinc-900 rounded-lg flex items-center justify-center text-white border border-zinc-200">🌙</div>
+                    <div className="w-10 h-10 bg-zinc-400 rounded-lg flex items-center justify-center text-white border border-zinc-200">🏁</div>
                     <div>
-                      <div className="font-semibold">Dark Mode</div>
-                      <div className="text-xs text-zinc-500">High contrast dark theme</div>
+                      <div className="font-semibold">Grayscale Mode</div>
+                      <div className="text-xs text-zinc-500">Remove color distractions globally</div>
                     </div>
                   </div>
                   <button
-                    onClick={() => setProfileState({ ...profileState, contrast_preference: profileState.contrast_preference === "dark-mode" ? "default" : "dark-mode" })}
-                    className={`w-14 h-8 rounded-full transition-colors relative ${profileState.contrast_preference === "dark-mode" ? 'bg-blue-600' : 'bg-zinc-300'}`}
+                    onClick={() => setProfileState({ ...profileState, contrast_preference: profileState.contrast_preference === "grayscale" ? "default" : "grayscale" })}
+                    className={`w-14 h-8 rounded-full transition-colors relative ${profileState.contrast_preference === "grayscale" ? 'bg-slate-600' : 'bg-zinc-300'}`}
                   >
-                    <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-transform ${profileState.contrast_preference === "dark-mode" ? 'left-7' : 'left-1'}`} />
+                    <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-transform ${profileState.contrast_preference === "grayscale" ? 'left-7' : 'left-1'}`} />
                   </button>
                 </div>
                 {/* Hide Images */}

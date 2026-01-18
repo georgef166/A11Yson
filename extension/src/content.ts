@@ -15,6 +15,7 @@ const updateLiveStyles = (settings: {
   dyslexiaFont: boolean;
   hideImages: boolean;
   lineHeight: number;
+  grayscale: boolean;
 }) => {
   if (!styleElement) {
     styleElement = document.createElement("style");
@@ -22,7 +23,7 @@ const updateLiveStyles = (settings: {
     document.head.appendChild(styleElement);
   }
 
-  const { fontSize, dyslexiaFont, hideImages, lineHeight } = settings;
+  const { fontSize, dyslexiaFont, hideImages, lineHeight, grayscale } = settings;
 
   let css = "";
 
@@ -37,10 +38,9 @@ const updateLiveStyles = (settings: {
   }
 
   if (dyslexiaFont) {
-    // Font is loaded via @fontsource/opendyslexic npm package, no need for @font-face
     css += `
             * {
-                font-family: 'OpenDyslexic', 'Comic Sans MS', sans-serif !important;
+                font-family: 'Helvetica', 'Arial', sans-serif !important;
             }
         `;
   }
@@ -77,6 +77,14 @@ const updateLiveStyles = (settings: {
                 line-height: ${lineHeight} !important;
             }
          `;
+  }
+
+  if (grayscale) {
+    css += `
+            html {
+                filter: grayscale(100%) !important;
+            }
+        `;
   }
 
   styleElement.textContent = css;
@@ -134,9 +142,10 @@ window.addEventListener("message", (event) => {
       // Apply Immediately!
       const settings = {
         fontSize: 16,
-        dyslexiaFont: p.recommended_font === "OpenDyslexic",
+        dyslexiaFont: p.recommended_font === "Helvetica",
         hideImages: p.features?.image_hiding || false,
         lineHeight: 0,
+        grayscale: p.contrast_preference === "grayscale"
       };
       updateLiveStyles(settings);
     });
@@ -157,9 +166,10 @@ chrome.storage.local.get("userProfile", (result) => {
     const p = result.userProfile as any;
     const settings = {
       fontSize: 16, // Default, hard to infer from "comfortable" vs "compact" without heuristics
-      dyslexiaFont: p.recommended_font === "OpenDyslexic",
+      dyslexiaFont: p.recommended_font === "Helvetica",
       hideImages: p.features?.image_hiding || false,
       lineHeight: 0,
+      grayscale: p.contrast_preference === "grayscale"
     };
     console.log("A11ySon: Auto-applying saved profile:", settings);
     updateLiveStyles(settings);

@@ -9,6 +9,7 @@ function App() {
   const [fontSize, setFontSize] = useState(16);
   const [hideImages, setHideImages] = useState(false);
   const [dyslexiaFont, setDyslexiaFont] = useState(false);
+  const [grayscale, setGrayscale] = useState(false);
 
   useEffect(() => {
     // Check current status
@@ -30,7 +31,7 @@ function App() {
   useEffect(() => {
     const loadProfile = (data?: any) => {
       const p = data || {};
-      if (p.recommended_font === "OpenDyslexic") setDyslexiaFont(true);
+      if (p.recommended_font === "Helvetica") setDyslexiaFont(true);
       else setDyslexiaFont(false);
 
       if (p.features?.image_hiding) setHideImages(true);
@@ -39,6 +40,9 @@ function App() {
       if (p.content_density === "chunked") setFontSize(18);
       else if (p.content_density === "compact") setFontSize(14);
       else setFontSize(16);
+
+      if (p.contrast_preference === "grayscale") setGrayscale(true);
+      else setGrayscale(false);
 
       // If storage updated and we have a primary condition, we could auto-switch mode if active
       if (p.primary_condition) {
@@ -74,7 +78,7 @@ function App() {
         // Live page CSS injection
         chrome.tabs.sendMessage(tab.id, {
           action: "apply_live_settings",
-          settings: { fontSize, hideImages, dyslexiaFont, lineHeight: 0 }
+          settings: { fontSize, hideImages, dyslexiaFont, lineHeight: 0, grayscale }
         });
 
         // If the Reader Overlay is open, also sync settings there
@@ -88,7 +92,7 @@ function App() {
     };
     const timeout = window.setTimeout(updateLiveSettings, 50);
     return () => window.clearTimeout(timeout);
-  }, [fontSize, hideImages, dyslexiaFont, isActive]);
+  }, [fontSize, hideImages, dyslexiaFont, isActive, grayscale]);
 
   const openReaderMode = async (mode: string) => {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -148,7 +152,7 @@ function App() {
 
             {/* Toggles */}
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-slate-700">OpenDyslexic Font</span>
+              <span className="text-sm font-medium text-slate-700">Helvetica (Clean Font)</span>
               <button
                 onClick={() => setDyslexiaFont(!dyslexiaFont)}
                 className={`w-11 h-6 rounded-full transition-colors relative ${dyslexiaFont ? 'bg-yellow-500' : 'bg-slate-200'}`}
@@ -164,6 +168,16 @@ function App() {
                 className={`w-11 h-6 rounded-full transition-colors relative ${hideImages ? 'bg-blue-600' : 'bg-slate-200'}`}
               >
                 <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-transform ${hideImages ? 'left-6' : 'left-1'}`} />
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-slate-700">Grayscale Mode</span>
+              <button
+                onClick={() => setGrayscale(!grayscale)}
+                className={`w-11 h-6 rounded-full transition-colors relative ${grayscale ? 'bg-slate-600' : 'bg-slate-200'}`}
+              >
+                <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-transform ${grayscale ? 'left-6' : 'left-1'}`} />
               </button>
             </div>
           </div>
@@ -205,6 +219,7 @@ function App() {
                 setFontSize(16);
                 setHideImages(false);
                 setDyslexiaFont(false);
+                setGrayscale(false);
                 chrome.storage.local.remove("userProfile");
                 closeReader(); // Reset should ALWAYS close the reader
               }}
