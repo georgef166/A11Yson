@@ -52,3 +52,15 @@ body {
 .read-the-docs {
   color: #888;
 }
+
+/* Fix for range input appearance */
+input[type="range"] {
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+/* Fix for button appearance */
+button {
+  appearance: button;
+  -webkit-appearance: button;
+}
