@@ -12,7 +12,7 @@ let imageBlockerCleanup: (() => void) | null = null;
 
 const updateLiveStyles = (settings: {
   fontSize: number;
-  dyslexiaFont: boolean;
+  fontFamily: string;
   hideImages: boolean;
   lineHeight: number;
   grayscale: boolean;
@@ -23,7 +23,7 @@ const updateLiveStyles = (settings: {
     document.head.appendChild(styleElement);
   }
 
-  const { fontSize, dyslexiaFont, hideImages, lineHeight, grayscale } =
+  const { fontSize, fontFamily, hideImages, lineHeight, grayscale } =
     settings;
 
   let css = "";
@@ -38,10 +38,10 @@ const updateLiveStyles = (settings: {
         `;
   }
 
-  if (dyslexiaFont) {
+  if (fontFamily && fontFamily !== "Default") {
     css += `
             * {
-                font-family: 'Helvetica', 'Arial', sans-serif !important;
+                font-family: '${fontFamily}', sans-serif !important;
             }
         `;
   }
@@ -128,7 +128,7 @@ window.addEventListener("message", (event) => {
       // Apply Immediately!
       const settings = {
         fontSize: 16,
-        dyslexiaFont: p.recommended_font === "Helvetica",
+        fontFamily: p.recommended_font || "Default",
         hideImages: p.features?.image_hiding || false,
         lineHeight: 0,
         grayscale: p.contrast_preference === "grayscale",
@@ -152,7 +152,7 @@ chrome.storage.local.get(["userProfile", "popupSettings"], (result) => {
     const s = result.popupSettings as any;
     const settings = {
       fontSize: s.fontSize || 16,
-      dyslexiaFont: s.dyslexiaFont || false,
+      fontFamily: s.fontFamily || "Default",
       hideImages: s.hideImages || false,
       lineHeight: s.lineHeight || 0,
       grayscale: s.grayscale || false,
@@ -162,8 +162,8 @@ chrome.storage.local.get(["userProfile", "popupSettings"], (result) => {
   } else if (result.userProfile) {
     const p = result.userProfile as any;
     const settings = {
-      fontSize: 16, // Default, hard to infer from "comfortable" vs "compact" without heuristics
-      dyslexiaFont: p.recommended_font === "Helvetica",
+      fontSize: 16,
+      fontFamily: p.recommended_font || "Default",
       hideImages: p.features?.image_hiding || false,
       lineHeight: 0,
       grayscale: p.contrast_preference === "grayscale",

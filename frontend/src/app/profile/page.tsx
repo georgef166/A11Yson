@@ -209,21 +209,28 @@ export default function ProfilePage() {
               <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-4">Visual & Typography</h4>
 
               <div className="space-y-4">
-                {/* Font Toggle */}
-                <div className="flex items-center justify-between p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
+                {/* Font Selection Dropdown */}
+                <div className="flex flex-col gap-3 p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-white dark:bg-zinc-800 rounded-lg flex items-center justify-center font-sans text-xl border border-zinc-200 dark:border-zinc-700 font-bold">He</div>
+                    <div className="w-10 h-10 bg-white dark:bg-zinc-800 rounded-lg flex items-center justify-center font-sans text-xl border border-zinc-200 dark:border-zinc-700 font-bold">Aa</div>
                     <div>
-                      <div className="font-semibold">Helvetica (Clean Font)</div>
-                      <div className="text-xs text-zinc-500">Cleaner reading on web pages</div>
+                      <div className="font-semibold">Reading Font</div>
+                      <div className="text-xs text-zinc-500">Choose a font for better readability</div>
                     </div>
                   </div>
-                  <button
-                    onClick={() => setProfileState({ ...profileState, recommended_font: profileState.recommended_font === "Helvetica" ? "Inter" : "Helvetica" })}
-                    className={`w-14 h-8 rounded-full transition-colors relative ${profileState.recommended_font === "Helvetica" ? 'bg-blue-600' : 'bg-zinc-300'}`}
+
+                  <select
+                    value={profileState.recommended_font}
+                    onChange={(e) => setProfileState({ ...profileState, recommended_font: e.target.value })}
+                    className="w-full p-3 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                   >
-                    <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-transform ${profileState.recommended_font === "Helvetica" ? 'left-7' : 'left-1'}`} />
-                  </button>
+                    <option value="Inter">Inter (Modern Default)</option>
+                    <option value="Calibri">Calibri</option>
+                    <option value="Helvetica">Helvetica</option>
+                    <option value="Arial">Arial</option>
+                    <option value="Verdana">Verdana</option>
+                    <option value="Times New Roman">Times New Roman</option>
+                  </select>
                 </div>
 
                 {/* Grayscale Mode */}
