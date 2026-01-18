@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
 import "./App.css";
-import Vector from "./components/Vector";
-import { API_BASE_URL } from "./config";
 
 function App() {
   const [isActive, setIsActive] = useState(false);
@@ -12,7 +10,6 @@ function App() {
   const [hideImages, setHideImages] = useState(false);
   const [fontFamily, setFontFamily] = useState("Default");
   const [grayscale, setGrayscale] = useState(false);
-  const [isSummarizing, setIsSummarizing] = useState(false);
   const [isDirectCalling, setIsDirectCalling] = useState(false);
   const [isCallActive, setIsCallActive] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -169,47 +166,6 @@ function App() {
     return () => window.clearTimeout(timeout);
   }, [fontSize, hideImages, fontFamily, isActive, grayscale, isLoaded, isCallActive]);
 
-  const summarizeAndCall = async () => {
-    setIsSummarizing(true);
-    try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (!tab.id) return;
-
-      console.log("A11Yson: Starting summarization...");
-      // 1. Get Text from Content Script
-      const response = await chrome.tabs.sendMessage(tab.id, { action: "get_page_text" });
-      console.log("A11Yson: Text extraction response:", !!response);
-      const text = response?.text;
-      if (!text) throw new Error("Could not extract text");
-
-      // 2. Get Summary from Backend
-      console.log("A11Yson: Fetching summary from backend...");
-      const sumRes = await fetch(`${API_BASE_URL}/api/summarize`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
-      });
-      if (!sumRes.ok) throw new Error("Backend summary failed");
-      const { summary } = await sumRes.json();
-      console.log("A11Yson: Summary received:", summary.substring(0, 50) + "...");
-
-      // 3. Tell Content Script to start the call with FULL TEXT as context
-      await chrome.tabs.sendMessage(tab.id, {
-        action: "start_call",
-        summary: text, // Passing full extracted text for maximum context
-        agentId: "agent_3501kf7qdg2xf3tbkfr7xjmedgdj"
-      });
-
-      console.log("A11Yson: Call started with full page context.");
-    } catch (err: any) {
-      console.error("Summarization failed:", err);
-      alert(`Summarization Error: ${err.message || "Unknown error"}. 
-
-Tip: Make sure you are not on a 'chrome://' page and that you have refreshed the webpage after updating the extension.`);
-    } finally {
-      setIsSummarizing(false);
-    }
-  };
 
   const startDirectCall = async () => {
     setIsDirectCalling(true);
@@ -262,24 +218,22 @@ Tip: Make sure you are not on a 'chrome://' page and that you have refreshed the
   return (
     <div className="w-full min-h-screen bg-slate-50 text-slate-900 font-sans">
       <header className="flex items-center justify-between p-4 bg-white border-b border-slate-200">
-        <div className="flex items-center gap-3">
-          <Vector />
-          <h1 className="text-xl font-bold text-[#206015] tracking-tight">
-            A11Yson{" "}
-            <span className="text-xs text-slate-400 font-normal ml-1">
-              Assistant
-            </span>
-          </h1>
+        <div className="flex items-center justify-center w-full">
+          <img
+            src="/logo.svg"
+            alt="A11Yson Logo"
+            className="h-8"
+          />
         </div>
         <div
           className={`w-2 h-2 rounded-full ${isActive || isCallActive ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" : "bg-slate-300"}`}
         />
       </header>
 
-      <main className="p-4 space-y-3">
+      <main className="p-4 space-y-3 text-center">
         {/* LIVE PAGE TOOLS - ALWAYS VISIBLE */}
         <div className="space-y-2">
-          <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-1">
+          <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest">
             Live Page Tools
           </h2>
 
@@ -358,7 +312,7 @@ Tip: Make sure you are not on a 'chrome://' page and that you have refreshed the
         {/* READER MODES */}
         <div className="space-y-3">
           {isActive && (
-            <div className="flex justify-end pr-1">
+            <div className="flex justify-center">
               <span className="text-xs text-[#2F7625] font-bold bg-[#F1F7F2] px-2 py-0.5 rounded-full">
                 Active
               </span>
@@ -368,45 +322,33 @@ Tip: Make sure you are not on a 'chrome://' page and that you have refreshed the
           <div className="grid grid-cols-2 gap-3">
             <button
               onClick={() => openReaderMode("focus")}
-              className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all text-center gap-2 group shadow-sm hover:shadow-md ${activeMode === "focus" ? "border-[#2F7625] bg-[#F1F7F2]" : "border-slate-200 bg-white"}`}
+              className={`flex items-center justify-center h-14 rounded-xl border transition-all text-center group shadow-sm hover:shadow-md ${activeMode === "focus" ? "border-[#2F7625] bg-[#F1F7F2]" : "border-slate-200 bg-white"}`}
             >
-              <span className="text-2xl group-hover:scale-110 transition-transform">
-                🧘
-              </span>
-              <span className="text-sm font-bold text-slate-700 mt-1">
+              <span className="text-sm font-bold text-slate-700">
                 ADHD
               </span>
             </button>
             <button
               onClick={() => openReaderMode("dyslexia")}
-              className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all text-center gap-2 group shadow-sm hover:shadow-md ${activeMode === "dyslexia" ? "border-amber-500 bg-amber-50" : "border-slate-200 bg-white"}`}
+              className={`flex items-center justify-center h-14 rounded-xl border transition-all text-center group shadow-sm hover:shadow-md ${activeMode === "dyslexia" ? "border-amber-500 bg-amber-50" : "border-slate-200 bg-white"}`}
             >
-              <span className="text-2xl group-hover:scale-110 transition-transform">
-                📖
-              </span>
-              <span className="text-sm font-bold text-slate-700 mt-1">
+              <span className="text-sm font-bold text-slate-700">
                 Dyslexia
               </span>
             </button>
             <button
               onClick={() => openReaderMode("sensory")}
-              className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all text-center gap-2 group shadow-sm hover:shadow-md ${activeMode === "sensory" ? "border-purple-500 bg-purple-50" : "border-slate-200 bg-white"}`}
+              className={`flex items-center justify-center h-14 rounded-xl border transition-all text-center group shadow-sm hover:shadow-md ${activeMode === "sensory" ? "border-purple-500 bg-purple-50" : "border-slate-200 bg-white"}`}
             >
-              <span className="text-2xl group-hover:scale-110 transition-transform">
-                🌈
-              </span>
-              <span className="text-sm font-bold text-slate-700 mt-1">
+              <span className="text-sm font-bold text-slate-700">
                 Sensory
               </span>
             </button>
             <button
               onClick={() => openReaderMode("clean")}
-              className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all text-center gap-2 group shadow-sm hover:shadow-md ${activeMode === "clean" ? "border-slate-400 bg-slate-50" : "border-slate-200 bg-white"}`}
+              className={`flex items-center justify-center h-14 rounded-xl border transition-all text-center group shadow-sm hover:shadow-md ${activeMode === "clean" ? "border-slate-400 bg-slate-50" : "border-slate-200 bg-white"}`}
             >
-              <span className="text-2xl group-hover:scale-110 transition-transform">
-                ✨
-              </span>
-              <span className="text-sm font-bold text-slate-700 mt-1">
+              <span className="text-sm font-bold text-slate-700">
                 Clean
               </span>
             </button>
@@ -414,9 +356,9 @@ Tip: Make sure you are not on a 'chrome://' page and that you have refreshed the
 
           {/* Live Call Indicator */}
           {isCallActive && (
-            <div className="flex items-center justify-between p-3 bg-red-50 border border-red-200 rounded-xl animate-pulse mt-1">
+            <div className="flex flex-col items-center justify-center p-3 bg-red-50 border border-red-200 rounded-xl animate-pulse mt-1 gap-1">
               <div className="flex items-center gap-3">
-                <span className="text-xl">🎙️</span>
+                <span className="text-xl"></span>
                 <div className="flex gap-1 items-center h-4">
                   <div className="w-1 bg-red-500 h-2 rounded-full animate-[bounce_1s_infinite]"></div>
                   <div className="w-1 bg-red-500 h-4 rounded-full animate-[bounce_1s_infinite_100ms]"></div>
@@ -429,29 +371,11 @@ Tip: Make sure you are not on a 'chrome://' page and that you have refreshed the
           )}
 
           {/* Action Row */}
-          <div className="flex gap-2 mt-2">
-            <button
-              onClick={summarizeAndCall}
-              disabled={isSummarizing}
-              className={`flex-1 py-4 rounded-xl flex flex-col items-center justify-center gap-1 font-bold text-white transition-all shadow-md active:scale-95 ${isSummarizing ? 'bg-slate-400 cursor-not-allowed' : 'bg-gradient-to-br from-[#2F7625] to-[#206015] hover:brightness-110'}`}
-            >
-              {isSummarizing ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span className="text-[10px]">Summarizing...</span>
-                </>
-              ) : (
-                <>
-                  <span className="text-xl">📄</span>
-                  <span className="text-[10px]">Summarize & Talk</span>
-                </>
-              )}
-            </button>
-
+          <div className="mt-2">
             <button
               onClick={startDirectCall}
               disabled={isDirectCalling}
-              className="flex-1 py-4 rounded-xl flex flex-col items-center justify-center gap-1 font-bold text-white transition-all shadow-md active:scale-95 bg-gradient-to-br from-[#333] to-[#111] hover:brightness-110 disabled:bg-slate-400"
+              className="w-full py-4 rounded-xl flex flex-col items-center justify-center gap-1 font-bold text-white transition-all shadow-md active:scale-95 bg-gradient-to-br from-[#2F7625] to-[#206015] hover:brightness-110 disabled:bg-slate-400"
             >
               {isDirectCalling ? (
                 <>
@@ -460,8 +384,8 @@ Tip: Make sure you are not on a 'chrome://' page and that you have refreshed the
                 </>
               ) : (
                 <>
-                  <span className="text-xl">💬</span>
-                  <span className="text-[10px]">Just Talk (Live)</span>
+                  <span className="text-xl"></span>
+                  <span className="text-xs uppercase tracking-wider">Talk to A11Yson!</span>
                 </>
               )}
             </button>
@@ -488,6 +412,7 @@ Tip: Make sure you are not on a 'chrome://' page and that you have refreshed the
           )}
         </div>
       </main>
+
     </div>
   );
 }
