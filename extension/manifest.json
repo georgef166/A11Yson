@@ -3,8 +3,12 @@
   "name": "A11Yson",
   "version": "1.0.0",
   "description": "A cognitive accessibility tool that reimagines content for focus and readability.",
+  "icons": {
+    "128": "extensionLogo.png"
+  },
   "action": {
-    "default_popup": "index.html"
+    "default_popup": "index.html",
+    "default_icon": "extensionLogo.png"
   },
   "content_scripts": [
     {
