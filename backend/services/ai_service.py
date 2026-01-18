@@ -54,7 +54,7 @@ async def analyze_profile(quiz_data: dict) -> dict:
         Return a JSON object with the following structure:
         {{
             "primary_condition": "ADHD" | "Dyslexia" | "Anxiety" | "General",
-            "recommended_font": "OpenDyslexic" | "Inter" | "Arial",
+            "recommended_font": "Calibri" | "Helvetica" | "Arial" | "Verdana" | "Times New Roman" | "Inter",
             "contrast_preference": "high-contrast" | "soft-yellow" | "dark-mode" | "default",
             "content_density": "compact" | "comfortable" | "chunked",
             "features": {{
