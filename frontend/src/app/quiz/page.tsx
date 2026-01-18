@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation"; // Import router
 import Header from "@/components/Header";    // Keep the header visible behind/above
+import { useAuth } from "@/context/AuthContext";
 
 interface Question {
   id: number;
@@ -43,6 +44,14 @@ export default function QuizPage() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const { user, loading: authLoading } = useAuth();
+
+  // AUTH PROTECTION: Redirect to home if not logged in
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push("/");
+    }
+  }, [user, authLoading, router]);
 
   const currentQuestion = questions[currentQuestionIndex];
 

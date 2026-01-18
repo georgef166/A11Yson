@@ -8,11 +8,13 @@ import Footer from "@/components/Footer";
 import { useAuth } from "@/context/AuthContext";
 
 export default function Home() {
-  const { user, loading, signInWithGoogle } = useAuth();
+  const { user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isSignUp, setIsSignUp] = useState(false);
   const [justSignedIn, setJustSignedIn] = useState(false);
+  const [error, setError] = useState("");
 
   // Handle "Insta Go to Quiz" redirect only if user effectively signs in on this page
   const handleGoogleSignIn = async () => {
@@ -23,9 +25,21 @@ export default function Home() {
     } catch (e) { console.error(e); }
   };
 
-  const handleEmailSignIn = (e: React.FormEvent) => {
+  const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert("Email sign-in is currently a placeholder. Please use Google Sign In!");
+    setError("");
+    setJustSignedIn(true);
+    try {
+      if (isSignUp) {
+        await signUpWithEmail(email, password);
+      } else {
+        await signInWithEmail(email, password);
+      }
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Authentication failed");
+      setJustSignedIn(false);
+    }
   };
 
   useEffect(() => {
@@ -130,9 +144,15 @@ export default function Home() {
 
         <div className="w-full max-w-md bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 p-8 animate-in fade-in zoom-in-95 duration-500 relative z-10">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold mb-2">Welcome Back</h1>
-            <p className="text-slate-500 dark:text-slate-400">Sign in to access your dashboard</p>
+            <h1 className="text-3xl font-bold mb-2">{isSignUp ? "Create Account" : "Welcome Back"}</h1>
+            <p className="text-slate-500 dark:text-slate-400">{isSignUp ? "Sign up to get personalized visuals" : "Sign in to access your dashboard"}</p>
           </div>
+
+          {error && (
+            <div className="bg-red-50 text-red-600 p-4 rounded-xl mb-6 text-sm font-medium border border-red-100 italic">
+              ⚠️ {error}
+            </div>
+          )}
 
           <form onSubmit={handleEmailSignIn} className="space-y-4 mb-6">
             <div>
@@ -156,9 +176,18 @@ export default function Home() {
               />
             </div>
             <button type="submit" className="w-full bg-slate-900 dark:bg-slate-100 text-white dark:text-black font-bold py-4 rounded-xl hover:opacity-90 transition-opacity flex justify-center">
-              Sign In with Email
+              {isSignUp ? "Create A11Yson Account" : "Sign In with Email"}
             </button>
           </form>
+
+          <div className="text-center mb-6">
+            <button
+              onClick={() => setIsSignUp(!isSignUp)}
+              className="text-sm font-semibold text-blue-600 hover:text-blue-700 underline underline-offset-4"
+            >
+              {isSignUp ? "Already have an account? Sign In" : "Don't have an account? Sign Up"}
+            </button>
+          </div>
 
           <div className="relative flex items-center gap-4 mb-6">
             <div className="h-px bg-slate-200 dark:bg-slate-800 flex-1"></div>

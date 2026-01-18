@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { useAuth } from "@/context/AuthContext";
 
 // Presets Configuration
 const PRESETS: Record<string, any> = {
@@ -38,6 +40,15 @@ export default function ProfilePage() {
   const [originalProfile, setOriginalProfile] = useState<any>(null); // Store the initial AI result
   const [loading, setLoading] = useState(true);
   const [activePreset, setActivePreset] = useState<string>("recommended"); // Track active selection
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+
+  // AUTH PROTECTION: Redirect to home if not logged in
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push("/");
+    }
+  }, [user, authLoading, router]);
 
   // Initialize editable state from LocalStorage on mount
   useEffect(() => {
@@ -123,7 +134,7 @@ export default function ProfilePage() {
           {/* LEFT SIDEBAR - PRESETS */}
           <div className="w-full md:w-1/3 bg-zinc-100 dark:bg-zinc-950 p-6 md:p-8 border-b md:border-b-0 md:border-r border-zinc-200 dark:border-zinc-800 flex flex-col">
             <div className="mb-8">
-              <h2 className="text-xl font-bold mb-1">Welcome, George</h2>
+              <h2 className="text-xl font-bold mb-1">Welcome, {user?.displayName?.split(" ")[0] || "Friend"}</h2>
               <p className="text-xs text-zinc-500 uppercase tracking-widest font-semibold">Select a Preset</p>
             </div>
 
