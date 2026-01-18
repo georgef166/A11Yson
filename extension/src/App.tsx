@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import './App.css';
+import { useState, useEffect } from "react";
+import "./App.css";
 
 function App() {
   const [isActive, setIsActive] = useState(false);
@@ -14,14 +14,21 @@ function App() {
   useEffect(() => {
     // Check current status
     const checkStatus = async () => {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      const [tab] = await chrome.tabs.query({
+        active: true,
+        currentWindow: true,
+      });
       if (tab.id) {
-        chrome.tabs.sendMessage(tab.id, { action: "get_status" }, (response) => {
-          if (!chrome.runtime.lastError && response) {
-            setIsActive(response.isOpen);
-            setActiveMode(response.activeTab);
-          }
-        });
+        chrome.tabs.sendMessage(
+          tab.id,
+          { action: "get_status" },
+          (response) => {
+            if (!chrome.runtime.lastError && response) {
+              setIsActive(response.isOpen);
+              setActiveMode(response.activeTab);
+            }
+          },
+        );
       }
     };
     checkStatus();
@@ -31,7 +38,7 @@ function App() {
   useEffect(() => {
     const loadProfile = (data?: any) => {
       const p = data || {};
-      if (p.recommended_font === "Helvetica") setDyslexiaFont(true);
+      if (p.recommended_font === "OpenDyslexic") setDyslexiaFont(true);
       else setDyslexiaFont(false);
 
       if (p.features?.image_hiding) setHideImages(true);
@@ -46,7 +53,12 @@ function App() {
 
       // If storage updated and we have a primary condition, we could auto-switch mode if active
       if (p.primary_condition) {
-        const modeMap: any = { "ADHD": "focus", "Dyslexia": "dyslexia", "Anxiety": "sensory", "Clean": "clean" };
+        const modeMap: any = {
+          ADHD: "focus",
+          Dyslexia: "dyslexia",
+          Anxiety: "sensory",
+          Clean: "clean",
+        };
         const mappedMode = modeMap[p.primary_condition];
         if (mappedMode && isActive) {
           openReaderMode(mappedMode);
@@ -73,19 +85,28 @@ function App() {
   // Send LIVE settings updates
   useEffect(() => {
     const updateLiveSettings = async () => {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      const [tab] = await chrome.tabs.query({
+        active: true,
+        currentWindow: true,
+      });
       if (tab.id) {
         // Live page CSS injection
         chrome.tabs.sendMessage(tab.id, {
           action: "apply_live_settings",
-          settings: { fontSize, hideImages, dyslexiaFont, lineHeight: 0, grayscale }
+          settings: {
+            fontSize,
+            hideImages,
+            dyslexiaFont,
+            lineHeight: 0,
+            grayscale,
+          },
         });
 
         // If the Reader Overlay is open, also sync settings there
         if (isActive) {
           chrome.tabs.sendMessage(tab.id, {
             action: "update_settings",
-            settings: { fontSize, hideImages }
+            settings: { fontSize, hideImages },
           });
         }
       }
@@ -95,7 +116,10 @@ function App() {
   }, [fontSize, hideImages, dyslexiaFont, isActive, grayscale]);
 
   const openReaderMode = async (mode: string) => {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const [tab] = await chrome.tabs.query({
+      active: true,
+      currentWindow: true,
+    });
     if (tab.id) {
       setIsActive(true);
       setActiveMode(mode);
@@ -104,7 +128,10 @@ function App() {
   };
 
   const closeReader = async () => {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const [tab] = await chrome.tabs.query({
+      active: true,
+      currentWindow: true,
+    });
     if (tab.id) {
       setIsActive(false);
       setActiveMode(null);
@@ -116,22 +143,30 @@ function App() {
     <div className="w-[340px] bg-slate-50 text-slate-900 font-sans">
       <header className="flex items-center justify-between p-4 bg-white border-b border-slate-200">
         <h1 className="text-xl font-bold text-blue-600 tracking-tight">
-          A11Yson <span className="text-xs text-slate-400 font-normal ml-1">Assistant</span>
+          A11Yson{" "}
+          <span className="text-xs text-slate-400 font-normal ml-1">
+            Assistant
+          </span>
         </h1>
-        <div className={`w-2 h-2 rounded-full ${isActive ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-slate-300'}`} />
+        <div
+          className={`w-2 h-2 rounded-full ${isActive ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" : "bg-slate-300"}`}
+        />
       </header>
 
       <main className="p-4 space-y-6">
-
         {/* LIVE PAGE TOOLS - ALWAYS VISIBLE */}
         <div className="space-y-4">
-          <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-1">Live Page Tools</h2>
+          <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-1">
+            Live Page Tools
+          </h2>
 
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4">
             {/* Font Size */}
             <div className="flex flex-col gap-2">
               <div className="flex justify-between items-center text-sm">
-                <span className="font-medium text-slate-700">Page Font Size</span>
+                <span className="font-medium text-slate-700">
+                  Page Font Size
+                </span>
                 <span className="text-slate-400 text-xs">{fontSize}px</span>
               </div>
               <div className="flex items-center gap-3">
@@ -152,32 +187,44 @@ function App() {
 
             {/* Toggles */}
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-slate-700">Helvetica (Clean Font)</span>
+              <span className="text-sm font-medium text-slate-700">
+                Helvetica (Clean Font)
+              </span>
               <button
                 onClick={() => setDyslexiaFont(!dyslexiaFont)}
-                className={`w-11 h-6 rounded-full transition-colors relative ${dyslexiaFont ? 'bg-yellow-500' : 'bg-slate-200'}`}
+                className={`w-11 h-6 rounded-full transition-colors relative ${dyslexiaFont ? "bg-yellow-500" : "bg-slate-200"}`}
               >
-                <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-transform ${dyslexiaFont ? 'left-6' : 'left-1'}`} />
+                <div
+                  className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-transform ${dyslexiaFont ? "left-6" : "left-1"}`}
+                />
               </button>
             </div>
 
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-slate-700">Hide Images</span>
+              <span className="text-sm font-medium text-slate-700">
+                Hide Images
+              </span>
               <button
                 onClick={() => setHideImages(!hideImages)}
-                className={`w-11 h-6 rounded-full transition-colors relative ${hideImages ? 'bg-blue-600' : 'bg-slate-200'}`}
+                className={`w-11 h-6 rounded-full transition-colors relative ${hideImages ? "bg-blue-600" : "bg-slate-200"}`}
               >
-                <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-transform ${hideImages ? 'left-6' : 'left-1'}`} />
+                <div
+                  className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-transform ${hideImages ? "left-6" : "left-1"}`}
+                />
               </button>
             </div>
 
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-slate-700">Grayscale Mode</span>
+              <span className="text-sm font-medium text-slate-700">
+                Grayscale Mode
+              </span>
               <button
                 onClick={() => setGrayscale(!grayscale)}
-                className={`w-11 h-6 rounded-full transition-colors relative ${grayscale ? 'bg-slate-600' : 'bg-slate-200'}`}
+                className={`w-11 h-6 rounded-full transition-colors relative ${grayscale ? "bg-slate-600" : "bg-slate-200"}`}
               >
-                <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-transform ${grayscale ? 'left-6' : 'left-1'}`} />
+                <div
+                  className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-transform ${grayscale ? "left-6" : "left-1"}`}
+                />
               </button>
             </div>
           </div>
@@ -186,30 +233,60 @@ function App() {
         {/* READER MODES */}
         <div className="space-y-4">
           <div className="flex justify-between items-center pl-1">
-            <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Neuro-Flow Active Reader</h2>
-            {isActive && <span className="text-xs text-green-600 font-bold bg-green-100 px-2 py-0.5 rounded-full">Active</span>}
+            <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+              Neuro-Flow Active Reader
+            </h2>
+            {isActive && (
+              <span className="text-xs text-green-600 font-bold bg-green-100 px-2 py-0.5 rounded-full">
+                Active
+              </span>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <button onClick={() => openReaderMode('focus')}
-              className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all text-center gap-2 group shadow-sm hover:shadow-md ${activeMode === 'focus' ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-white'}`}>
-              <span className="text-2xl group-hover:scale-110 transition-transform">🧘</span>
-              <span className="text-sm font-bold text-slate-700 mt-1">Focus</span>
+            <button
+              onClick={() => openReaderMode("focus")}
+              className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all text-center gap-2 group shadow-sm hover:shadow-md ${activeMode === "focus" ? "border-blue-500 bg-blue-50" : "border-slate-200 bg-white"}`}
+            >
+              <span className="text-2xl group-hover:scale-110 transition-transform">
+                🧘
+              </span>
+              <span className="text-sm font-bold text-slate-700 mt-1">
+                Focus
+              </span>
             </button>
-            <button onClick={() => openReaderMode('dyslexia')}
-              className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all text-center gap-2 group shadow-sm hover:shadow-md ${activeMode === 'dyslexia' ? 'border-yellow-500 bg-yellow-50' : 'border-slate-200 bg-white'}`}>
-              <span className="text-2xl group-hover:scale-110 transition-transform">📖</span>
-              <span className="text-sm font-bold text-slate-700 mt-1">Dyslexia</span>
+            <button
+              onClick={() => openReaderMode("dyslexia")}
+              className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all text-center gap-2 group shadow-sm hover:shadow-md ${activeMode === "dyslexia" ? "border-yellow-500 bg-yellow-50" : "border-slate-200 bg-white"}`}
+            >
+              <span className="text-2xl group-hover:scale-110 transition-transform">
+                📖
+              </span>
+              <span className="text-sm font-bold text-slate-700 mt-1">
+                Dyslexia
+              </span>
             </button>
-            <button onClick={() => openReaderMode('sensory')}
-              className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all text-center gap-2 group shadow-sm hover:shadow-md ${activeMode === 'sensory' ? 'border-purple-500 bg-purple-50' : 'border-slate-200 bg-white'}`}>
-              <span className="text-2xl group-hover:scale-110 transition-transform">🌙</span>
-              <span className="text-sm font-bold text-slate-700 mt-1">Sensory</span>
+            <button
+              onClick={() => openReaderMode("sensory")}
+              className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all text-center gap-2 group shadow-sm hover:shadow-md ${activeMode === "sensory" ? "border-purple-500 bg-purple-50" : "border-slate-200 bg-white"}`}
+            >
+              <span className="text-2xl group-hover:scale-110 transition-transform">
+                🌙
+              </span>
+              <span className="text-sm font-bold text-slate-700 mt-1">
+                Sensory
+              </span>
             </button>
-            <button onClick={() => openReaderMode('clean')}
-              className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all text-center gap-2 group shadow-sm hover:shadow-md ${activeMode === 'clean' ? 'border-slate-400 bg-slate-50' : 'border-slate-200 bg-white'}`}>
-              <span className="text-2xl group-hover:scale-110 transition-transform">✨</span>
-              <span className="text-sm font-bold text-slate-700 mt-1">Clean</span>
+            <button
+              onClick={() => openReaderMode("clean")}
+              className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all text-center gap-2 group shadow-sm hover:shadow-md ${activeMode === "clean" ? "border-slate-400 bg-slate-50" : "border-slate-200 bg-white"}`}
+            >
+              <span className="text-2xl group-hover:scale-110 transition-transform">
+                ✨
+              </span>
+              <span className="text-sm font-bold text-slate-700 mt-1">
+                Clean
+              </span>
             </button>
           </div>
 
@@ -230,12 +307,14 @@ function App() {
           )}
 
           {isActive && (
-            <button onClick={closeReader} className="w-full py-3 bg-red-50 text-red-600 font-bold rounded-xl hover:bg-red-100 transition-colors border border-red-100">
+            <button
+              onClick={closeReader}
+              className="w-full py-3 bg-red-50 text-red-600 font-bold rounded-xl hover:bg-red-100 transition-colors border border-red-100"
+            >
               Close Reader Mode
             </button>
           )}
         </div>
-
       </main>
     </div>
   );
